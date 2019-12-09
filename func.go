@@ -20,44 +20,57 @@ func GetReflectTypeOf(val interface{}) reflect.Type {
 	return valType
 }
 
-// TypeMatch describes a single value type
+// TypeMatch describes a single value type or kind
 type TypeMatch struct {
 	valueType      reflect.Type
+	valueKind      reflect.Kind
 	minIndirection int
 	maxIndirection int
 }
 
 func (v TypeMatch) String() string {
+	var typeOrKind interface{}
+	if v.valueType != nil {
+		typeOrKind = v.valueType
+	} else {
+		typeOrKind = v.valueKind
+	}
+
 	return fmt.Sprintf(
-		"TypeMatch: {valueType: %s, minIndirection: %d, maxIndirection: %d}",
-		v.valueType,
+		"TypeMatch: {type: %s, minIndirection: %d, maxIndirection: %d}",
+		typeOrKind,
 		v.minIndirection,
 		v.maxIndirection,
 	)
 }
 
 // NewTypeMatch constructs a TypeMatch
-// The given type cannot have more than two levels of pointer indirection
+// The value passed can be a value, a reflect.Value that wraps a value,
+// a reflect.Type that wraps a value type, or a reflect.Kind.
+// If the value is not a reflect.Kind, then it cannot have more than two levels of pointer indirection.
 // If indirection may have up two ints, as follows:
 // - 0 ints: minIndirection = maxIndirection = 0
 // - 1 int:  minIndirection = maxIndirection = int
 // - 2 ints: minIndirection = first int, maxIndirection = second int
-// The type passed can be a value, a reflect.Value that wraps a value,
-// or a reflect.Type that wraps a value type.
-// In all cases, the type represented can have up to two levels of indirection.
 func NewTypeMatch(val interface{}, indirection ...int) TypeMatch {
-	typ := GetReflectTypeOf(val)
+	var valueType reflect.Type
+	valueKind := reflect.Invalid
+	valueKind, ok := val.(reflect.Kind)
+	if !ok {
+		typ := GetReflectTypeOf(val)
 
-	// Deref the given type up to two times if neccessary to get actual type
-	valueType := typ
-	if valueType.Kind() == reflect.Ptr {
-		valueType = valueType.Elem()
-	}
-	if valueType.Kind() == reflect.Ptr {
-		valueType = valueType.Elem()
-	}
-	if valueType.Kind() == reflect.Ptr {
-		panic(fmt.Errorf("Too much indirection in type %s", typ))
+		// Deref the given type up to two times if neccessary to get actual type
+		if typ.Kind() == reflect.Ptr {
+			typ = typ.Elem()
+		}
+		if typ.Kind() == reflect.Ptr {
+			typ = typ.Elem()
+		}
+		if typ.Kind() == reflect.Ptr {
+			panic(fmt.Errorf("Too much indirection in type %s", typ))
+		}
+
+		valueType = typ
 	}
 
 	minIndirection := 0
@@ -72,6 +85,7 @@ func NewTypeMatch(val interface{}, indirection ...int) TypeMatch {
 
 	return TypeMatch{
 		valueType:      valueType,
+		valueKind:      valueKind,
 		minIndirection: minIndirection,
 		maxIndirection: maxIndirection,
 	}
@@ -93,7 +107,8 @@ func (tm TypeMatch) Matches(t reflect.Type) bool {
 		return false
 	}
 
-	return (valueType == tm.valueType) &&
+	return (((tm.valueType != nil) && (valueType == tm.valueType)) ||
+		((tm.valueType == nil) && (valueType.Kind() == tm.valueKind))) &&
 		(indirection >= tm.minIndirection) &&
 		(indirection <= tm.maxIndirection)
 }
@@ -106,10 +121,11 @@ type FuncTypeMatch struct {
 }
 
 // NewFuncTypeMatch constructs a FuncTypeMatch
+// The val and indirection are passed to NewTypeMatch
 func NewFuncTypeMatch(val interface{}, optional bool, indirection ...int) FuncTypeMatch {
 	return FuncTypeMatch{
 		typeMatch: NewTypeMatch(val, indirection...),
-		optional: optional,
+		optional:  optional,
 	}
 }
 
@@ -148,22 +164,25 @@ func (f *FuncMatcher) WithOptionalReturnType(val interface{}, indirection ...int
 	return f
 }
 
-// Matches returns true if the given value matches the parameter and return types of this matcher.
+// MatchingIndexes returns true if the given value matches the parameter and return types of this matcher.
 // The value passed can be a function object, a reflect.Value that wraps a function object,
 // or a reflect.Type that wraps a function type.
 // If the value is not any of the above types, false is returned.
-func (f *FuncMatcher) Matches(fn interface{}) bool {
+// If the value is a matching function, the indexes of the matching parameter and return types are
+// also returned. If there are optional parameter and/or return types, this allows the caller to
+// determine which particular parameter and return types were actually used by the function.
+func (f FuncMatcher) MatchingIndexes(fn interface{}) (params []int, returns []int, matches bool) {
 	// Get a reflect.Type wrapper
 	fnType := GetReflectTypeOf(fn)
 
-	if (fnType.Kind() == reflect.Func) {
+	if fnType.Kind() == reflect.Func {
 		// Iterate function params
 		paramIndex := 0
 		numParams := fnType.NumIn()
 		// If we have no param types to match, then the func must accept no params
-		if (len(f.paramTypes) == 0) {
+		if len(f.paramTypes) == 0 {
 			if numParams != 0 {
-				return false
+				return nil, nil, false
 			}
 		} else {
 			// See if our params match that of the function
@@ -176,23 +195,23 @@ func (f *FuncMatcher) Matches(fn interface{}) bool {
 
 				// It's ok to not match if it's an optional param
 				if !paramType.optional {
-					return false
+					return nil, nil, false
 				}
 			}
 		}
 
 		// If there are still parameters we haven't matched, it's not a match
 		if paramIndex < numParams {
-			return false
+			return nil, nil, false
 		}
 
 		// Iterate return values
 		returnIndex := 0
 		numReturns := fnType.NumOut()
 		// If we have no return types to match, then the func must return no values
-		if (len(f.returnTypes) == 0) {
+		if len(f.returnTypes) == 0 {
 			if numReturns != 0 {
-				return false
+				return nil, nil, false
 			}
 		} else {
 			// See if our returns match that of the function
@@ -205,18 +224,24 @@ func (f *FuncMatcher) Matches(fn interface{}) bool {
 
 				// It's ok to not match if it's an optional return
 				if !returnType.optional {
-					return false
+					return nil, nil, false
 				}
 			}
 		}
 
 		// If there are still returns we haven't matched, it's not a match
 		if returnIndex < numReturns {
-			return false
+			return nil, nil, false
 		}
 	} else {
-		return false
+		return nil, nil, false
 	}
 
-	return true
+	return nil, nil, true
+}
+
+// Matches simply calls MatchingIndexes and returns only the bool result, for simple yes/no matching
+func (f FuncMatcher) Matches(fn interface{}) bool {
+	_, _, matches := f.MatchingIndexes(fn)
+	return matches
 }

@@ -16,6 +16,7 @@ func TestGetReflectTypeOf(t *testing.T) {
 func TestTypeMatch(t *testing.T) {
 	tm := NewTypeMatch(0)
 	assert.Equal(t, reflect.Int, tm.valueType.Kind())
+	assert.Equal(t, reflect.Invalid, tm.valueKind)
 	assert.Equal(t, 0, tm.minIndirection)
 	assert.Equal(t, 0, tm.maxIndirection)
 	assert.True(t, tm.Matches(reflect.TypeOf(0)))
@@ -24,6 +25,7 @@ func TestTypeMatch(t *testing.T) {
 
 	tm = NewTypeMatch(0, 1)
 	assert.Equal(t, reflect.Int, tm.valueType.Kind())
+	assert.Equal(t, reflect.Invalid, tm.valueKind)
 	assert.Equal(t, 1, tm.minIndirection)
 	assert.Equal(t, 1, tm.maxIndirection)
 	assert.False(t, tm.Matches(reflect.TypeOf(0)))
@@ -32,11 +34,30 @@ func TestTypeMatch(t *testing.T) {
 
 	tm = NewTypeMatch(0, 1, 2)
 	assert.Equal(t, reflect.Int, tm.valueType.Kind())
+	assert.Equal(t, reflect.Invalid, tm.valueKind)
 	assert.Equal(t, 1, tm.minIndirection)
 	assert.Equal(t, 2, tm.maxIndirection)
 	assert.False(t, tm.Matches(reflect.TypeOf(0)))
 	assert.True(t, tm.Matches(reflect.TypeOf((*int)(nil))))
 	assert.True(t, tm.Matches(reflect.TypeOf((**int)(nil))))
+
+	type str struct {}
+
+	tm = NewTypeMatch(reflect.Struct)
+	assert.Nil(t, tm.valueType)
+	assert.Equal(t, reflect.Struct, tm.valueKind)
+	assert.Equal(t, 0, tm.minIndirection)
+	assert.Equal(t, 0, tm.maxIndirection)
+	assert.True(t, tm.Matches(reflect.TypeOf(str{})))
+	assert.False(t, tm.Matches(reflect.TypeOf([]int{})))
+
+	tm = NewTypeMatch(reflect.Slice, 1)
+	assert.Nil(t, tm.valueType)
+	assert.Equal(t, reflect.Slice, tm.valueKind)
+	assert.Equal(t, 1, tm.minIndirection)
+	assert.Equal(t, 1, tm.maxIndirection)
+	assert.False(t, tm.Matches(reflect.TypeOf(str{})))
+	assert.True(t, tm.Matches(reflect.TypeOf(&[]int{})))
 }
 
 func TestFuncMatcher(t *testing.T) {

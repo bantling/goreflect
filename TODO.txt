@@ -1,6 +1,4 @@
 FuncTypeMatch
-- add ability to have an or matcher
-  - match different sets of parameters starting at next position
 - instead of returning bool, return which types were matched
   - each matcher can have an extra data field of type interface{} that means something to the caller
     eg, an array position or map key
