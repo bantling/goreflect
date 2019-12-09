@@ -156,27 +156,67 @@ func (f *FuncMatcher) Matches(fn interface{}) bool {
 	// Get a reflect.Type wrapper
 	fnType := GetReflectTypeOf(fn)
 
-	// Assume the value does not match
-	matches := false
-	if (fnType.Kind() == reflect.Func) &&
-		(fnType.NumIn() == len(f.paramTypes)) &&
-		(fnType.NumOut() == len(f.returnTypes)) {
-		// Now that we know it is a func with correct number of args and return vals,
-		// assume it matches unless we encounter an arg or return value that doesn't.
-		matches = true
-
-		for i, paramType := range f.paramTypes {
-			if !paramType.typeMatch.Matches(fnType.In(i)) {
+	if (fnType.Kind() == reflect.Func) {
+		// Iterate function params
+		paramIndex := 0
+		numParams := fnType.NumIn()
+		// If we have no param types to match, then the func must accept no params
+		if (len(f.paramTypes) == 0) {
+			if numParams != 0 {
 				return false
+			}
+		} else {
+			// See if our params match that of the function
+			for _, paramType := range f.paramTypes {
+				// Advance to next loop if we have a matching param
+				if (paramIndex < numParams) && paramType.typeMatch.Matches(fnType.In(paramIndex)) {
+					paramIndex++
+					continue
+				}
+
+				// It's ok to not match if it's an optional param
+				if !paramType.optional {
+					return false
+				}
 			}
 		}
 
-		for i, returnType := range f.returnTypes {
-			if !returnType.typeMatch.Matches(fnType.Out(i)) {
+		// If there are still parameters we haven't matched, it's not a match
+		if paramIndex < numParams {
+			return false
+		}
+
+		// Iterate return values
+		returnIndex := 0
+		numReturns := fnType.NumOut()
+		// If we have no return types to match, then the func must return no values
+		if (len(f.returnTypes) == 0) {
+			if numReturns != 0 {
 				return false
 			}
+		} else {
+			// See if our returns match that of the function
+			for _, returnType := range f.returnTypes {
+				// Advance to next loop if we have a matching return
+				if (returnIndex < numReturns) && returnType.typeMatch.Matches(fnType.Out(returnIndex)) {
+					returnIndex++
+					continue
+				}
+
+				// It's ok to not match if it's an optional return
+				if !returnType.optional {
+					return false
+				}
+			}
 		}
+
+		// If there are still returns we haven't matched, it's not a match
+		if returnIndex < numReturns {
+			return false
+		}
+	} else {
+		return false
 	}
 
-	return matches
+	return true
 }
