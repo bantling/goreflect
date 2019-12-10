@@ -1,4 +1,4 @@
-module github.com/bantling/go-reflect
+module github.com/bantling/goreflect
 
 go 1.13
 
