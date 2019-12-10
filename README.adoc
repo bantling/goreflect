@@ -1,1 +1,60 @@
-A reflection helper for go
+= A reflection helper for go
+Greg Hall, greghall@bantling.me
+
+Simplify usage of reflection, to make it less tedious and technical:
+
+* Match types
+** Provide an instance of the type, a reflect.Value, or reflect.Type
+** Indicate the minimum and maximum number of pointer indirections
+** Provide a value that is a pointer, but specify no indirections (or vice-versa)
+** Matches against a reflect.Type
+* Match function signatures
+** Builds on matching types, but allows them to be optional
+** Both parameters and return types can be optional
+** Returns indexes indicating which parameters and return types matched, for use cases with optional parameters and/or return types
+** Returns bool to indicate whether or not a function matches
+** Fluent api
+
+== Example
+
+[source, Go]
+----
+type Foo struct{}
+type Bar struct{}
+
+// Match a func that accepts a required int and an optional struct of any type
+matcher = NewFuncMatcher().
+  WithParamType(0).
+  WithOptionalParamType(reflect.Struct)
+
+// Returns true
+matcher.Matches(func(int) {})
+matcher.Matches(func(int, Foo) {})
+matcher.Matches(func(int, Bar) {})
+
+// Returns false
+matcher.Matches(func(Foo) {}))
+
+// Returns []int{0}, []int{}, true
+matcher.MatchingIndexes(func(int) {})
+
+// Returns []int{0, 1}, []int{}, true
+matcher.MatchingIndexes(func(int, Foo) {})
+
+// Returns nil, nil, false
+matcher.MatchingIndexes(func(Foo) {}))
+
+// Match a func that accepts Foo or *Foo and returns *Bar
+matcher = NewFuncMatcher().
+  WithParamType(Foo{}, 0, 1). // Minimum pointer indirection = 0 (value), maximum = 1 (pointer)
+  WithReturnType(Bar{}, 1) // Minimum pointer indirection = maximum = 1
+
+// Returns true
+matcher.matches(func(Foo) *Bar {return (*Bar)(nil)})
+matcher.matches(func(*Foo) *Bar {return (*Bar)(nil)})
+
+// Returns false
+matcher.matches(func(**Foo) *Bar {return (*Bar)(nil)})
+matcher.matches(func(Foo) Bar {return Bar{}})
+matcher.matches(func(Foo) **Bar {return (**Bar)(nil)})
+----
