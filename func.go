@@ -172,6 +172,10 @@ func (f *FuncMatcher) WithOptionalReturnType(val interface{}, indirection ...int
 // also returned. If there are optional parameter and/or return types, this allows the caller to
 // determine which particular parameter and return types were actually used by the function.
 func (f FuncMatcher) MatchingIndexes(fn interface{}) (params []int, returns []int, matches bool) {
+	// Indexes to return
+	paramIndexes := []int{}
+	returnIndexes := []int{}
+
 	// Get a reflect.Type wrapper
 	fnType := GetReflectTypeOf(fn)
 
@@ -189,6 +193,7 @@ func (f FuncMatcher) MatchingIndexes(fn interface{}) (params []int, returns []in
 			for _, paramType := range f.paramTypes {
 				// Advance to next loop if we have a matching param
 				if (paramIndex < numParams) && paramType.typeMatch.Matches(fnType.In(paramIndex)) {
+					paramIndexes = append(paramIndexes, paramIndex)
 					paramIndex++
 					continue
 				}
@@ -218,6 +223,7 @@ func (f FuncMatcher) MatchingIndexes(fn interface{}) (params []int, returns []in
 			for _, returnType := range f.returnTypes {
 				// Advance to next loop if we have a matching return
 				if (returnIndex < numReturns) && returnType.typeMatch.Matches(fnType.Out(returnIndex)) {
+					returnIndexes = append(returnIndexes, returnIndex)
 					returnIndex++
 					continue
 				}
@@ -237,7 +243,7 @@ func (f FuncMatcher) MatchingIndexes(fn interface{}) (params []int, returns []in
 		return nil, nil, false
 	}
 
-	return nil, nil, true
+	return paramIndexes, returnIndexes, true
 }
 
 // Matches simply calls MatchingIndexes and returns only the bool result, for simple yes/no matching
