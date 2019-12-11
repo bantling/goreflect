@@ -23,7 +23,7 @@ type Foo struct{}
 type Bar struct{}
 
 // Match a func that accepts a required int and an optional struct of any type
-matcher = NewFuncMatcher().
+matcher := NewFuncMatcher().
   WithParamType(0).
   WithOptionalParamType(reflect.Struct)
 
@@ -57,4 +57,21 @@ matcher.matches(func(*Foo) *Bar {return (*Bar)(nil)})
 matcher.matches(func(**Foo) *Bar {return (*Bar)(nil)})
 matcher.matches(func(Foo) Bar {return Bar{}})
 matcher.matches(func(Foo) **Bar {return (**Bar)(nil)})
+
+// Match a func that accepts a required int or string and returns a required int or string.
+// First two zeros in calls below are min/max pointer indirection.
+matcher = NewFuncMatcher().
+  WithParamTypes(0, 0, 0, "").
+  WithReturnTypes(0, 0, "", 0)
+
+// Returns true
+matcher.matches(func(int) int {return 0})
+matcher.matches(func(string) int {return 0})
+matcher.matches(func(int) string {return ""})
+matcher.matches(func(string) string {return ""})
+
+// Returns false
+matcher.matches(func() {})
+matcher.matches(func(int) {})
+matcher.matches(func() string {})
 ----
