@@ -12,6 +12,7 @@ Simplify usage of reflection, to make it less tedious and technical:
 * Match function signatures
 ** Builds on matching types, but allows them to be optional
 ** Return indexes indicating which parameters and return types matched and a bool, for use cases with optional parameters and/or return types
+** Any parameter or return type position can be optional, not just at the end.
 ** Return just a bool to indicate whether or not a function matches
 ** Fluent api
 
