@@ -432,4 +432,28 @@ func TestFuncMatcher(t *testing.T) {
 	assert.Equal(t, []int(nil), paramIndexes)
 	assert.Equal(t, []int(nil), returnIndexes)
 	assert.False(t, matches)
+
+	matcher = NewFuncMatcher().
+		WithParams(NewFuncTypeMatch(0, true)).
+		WithReturns(NewFuncTypeMatch("", false))
+	assert.True(t, matcher.Matches(func(int) {}))	
+	assert.True(t, matcher.Matches(func(int) string {return ""}))
+	assert.False(t, matcher.Matches(func() {}))
+	assert.False(t, matcher.Matches(func() string {return ""}))
+	paramIndexes, returnIndexes, matches = matcher.MatchingIndexes(func(int) {})
+	assert.Equal(t, []int{0}, paramIndexes)
+	assert.Equal(t, []int{}, returnIndexes)
+	assert.True(t, matches)
+	paramIndexes, returnIndexes, matches = matcher.MatchingIndexes(func(int) string {return ""})
+	assert.Equal(t, []int{0}, paramIndexes)
+	assert.Equal(t, []int{0}, returnIndexes)
+	assert.True(t, matches)
+	paramIndexes, returnIndexes, matches = matcher.MatchingIndexes(func() {})
+	assert.Equal(t, []int(nil), paramIndexes)
+	assert.Equal(t, []int(nil), returnIndexes)
+	assert.False(t, matches)
+	paramIndexes, returnIndexes, matches = matcher.MatchingIndexes(func() string {return ""})
+	assert.Equal(t, []int(nil), paramIndexes)
+	assert.Equal(t, []int(nil), returnIndexes)
+	assert.False(t, matches)
 }

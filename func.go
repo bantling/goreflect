@@ -175,15 +175,15 @@ func (tm TypeMatch) Matches(t reflect.Type) bool {
 // The difference is that a parameter or return type that may or may not be present in a matching function.
 type FuncTypeMatch struct {
 	typeMatch TypeMatch
-	optional  bool
+	required  bool
 }
 
 // NewFuncTypeMatch constructs a FuncTypeMatch
 // See NewTypeMatch
-func NewFuncTypeMatch(val interface{}, optional bool, indirection ...int) FuncTypeMatch {
+func NewFuncTypeMatch(val interface{}, required bool, indirection ...int) FuncTypeMatch {
 	return FuncTypeMatch{
 		typeMatch: NewTypeMatch(val, indirection...),
-		optional:  optional,
+		required:  required,
 	}
 }
 
@@ -192,14 +192,14 @@ func NewFuncTypeMatch(val interface{}, optional bool, indirection ...int) FuncTy
 func NewFuncMultiTypeMatch(
 	minIndirection int,
 	maxIndirection int,
-	optional bool,
+	required bool,
 	val1 interface{},
 	val2 interface{},
 	vals ...interface{},
 ) FuncTypeMatch {
 	return FuncTypeMatch{
 		typeMatch: NewMultiTypeMatch(minIndirection, maxIndirection, val1, val2, vals...),
-		optional:  optional,
+		required:  required,
 	}
 }
 
@@ -216,13 +216,13 @@ func NewFuncMatcher() *FuncMatcher {
 
 // WithParamType builder adds the given param type
 func (f *FuncMatcher) WithParamType(val interface{}, indirection ...int) *FuncMatcher {
-	f.paramTypes = append(f.paramTypes, NewFuncTypeMatch(val, false, indirection...))
+	f.paramTypes = append(f.paramTypes, NewFuncTypeMatch(val, true, indirection...))
 	return f
 }
 
 // WithOptionalParamType builder adds the given param type
 func (f *FuncMatcher) WithOptionalParamType(val interface{}, indirection ...int) *FuncMatcher {
-	f.paramTypes = append(f.paramTypes, NewFuncTypeMatch(val, true, indirection...))
+	f.paramTypes = append(f.paramTypes, NewFuncTypeMatch(val, false, indirection...))
 	return f
 }
 
@@ -236,7 +236,7 @@ func (f *FuncMatcher) WithParamOfTypes(
 ) *FuncMatcher {
 	f.paramTypes = append(
 		f.paramTypes,
-		NewFuncMultiTypeMatch(minIndirection, maxIndirection, false, val1, val2, vals...),
+		NewFuncMultiTypeMatch(minIndirection, maxIndirection, true, val1, val2, vals...),
 	)
 
 	return f
@@ -252,21 +252,32 @@ func (f *FuncMatcher) WithOptionalParamOfTypes(
 ) *FuncMatcher {
 	f.paramTypes = append(
 		f.paramTypes,
-		NewFuncMultiTypeMatch(minIndirection, maxIndirection, true, val1, val2, vals...),
+		NewFuncMultiTypeMatch(minIndirection, maxIndirection, false, val1, val2, vals...),
 	)
+
+	return f
+}
+
+// WithParams builder adds the given FuncTypeMatch objects to the parameters
+func (f *FuncMatcher) WithParams(
+	funcTypeMatch   FuncTypeMatch,
+	funcTypeMatches ...FuncTypeMatch,
+)  *FuncMatcher {
+	f.paramTypes = append(f.paramTypes, funcTypeMatch)
+	f.paramTypes = append(f.paramTypes, funcTypeMatches...)
 
 	return f
 }
 
 // WithReturnType builder adds the given return type
 func (f *FuncMatcher) WithReturnType(val interface{}, indirection ...int) *FuncMatcher {
-	f.returnTypes = append(f.returnTypes, NewFuncTypeMatch(val, false, indirection...))
+	f.returnTypes = append(f.returnTypes, NewFuncTypeMatch(val, true, indirection...))
 	return f
 }
 
 // WithOptionalReturnType builder adds the given return type
 func (f *FuncMatcher) WithOptionalReturnType(val interface{}, indirection ...int) *FuncMatcher {
-	f.returnTypes = append(f.returnTypes, NewFuncTypeMatch(val, true, indirection...))
+	f.returnTypes = append(f.returnTypes, NewFuncTypeMatch(val, false, indirection...))
 	return f
 }
 
@@ -280,7 +291,7 @@ func (f *FuncMatcher) WithReturnOfTypes(
 ) *FuncMatcher {
 	f.returnTypes = append(
 		f.returnTypes,
-		NewFuncMultiTypeMatch(minIndirection, maxIndirection, false, val1, val2, vals...),
+		NewFuncMultiTypeMatch(minIndirection, maxIndirection, true, val1, val2, vals...),
 	)
 
 	return f
@@ -296,8 +307,19 @@ func (f *FuncMatcher) WithOptionalReturnOfTypes(
 ) *FuncMatcher {
 	f.returnTypes = append(
 		f.returnTypes,
-		NewFuncMultiTypeMatch(minIndirection, maxIndirection, true, val1, val2, vals...),
+		NewFuncMultiTypeMatch(minIndirection, maxIndirection, false, val1, val2, vals...),
 	)
+
+	return f
+}
+
+// WithReturns builder adds the given FuncTypeMatch objects to the returns
+func (f *FuncMatcher) WithReturns(
+	funcTypeMatch   FuncTypeMatch,
+	funcTypeMatches ...FuncTypeMatch,
+) *FuncMatcher {
+	f.returnTypes = append(f.returnTypes, funcTypeMatch)
+	f.returnTypes = append(f.returnTypes, funcTypeMatches...)
 
 	return f
 }
@@ -338,8 +360,8 @@ func (f FuncMatcher) MatchingIndexes(fn interface{}) (params []int, returns []in
 					continue
 				}
 
-				// It's ok to not match if it's an optional param
-				if !paramType.optional {
+				// Required params must match
+				if paramType.required {
 					return nil, nil, false
 				}
 			}
@@ -368,8 +390,8 @@ func (f FuncMatcher) MatchingIndexes(fn interface{}) (params []int, returns []in
 					continue
 				}
 
-				// It's ok to not match if it's an optional return
-				if !returnType.optional {
+				// Required returns must match
+				if returnType.required {
 					return nil, nil, false
 				}
 			}
