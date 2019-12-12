@@ -104,16 +104,12 @@ func NewTypeMatch(val interface{}, indirection ...int) TypeMatch {
 func NewMultiTypeMatch(
 	minIndirection int,
 	maxIndirection int,
-	val1 interface{},
-	val2 interface{},
 	vals ...interface{},
 ) TypeMatch {
 	var kinds []reflect.Kind
 	var types []reflect.Type
-	allVals := []interface{}{val1, val2}
-	allVals = append(allVals, vals...)
 
-	for _, val := range allVals {
+	for _, val := range vals {
 		kind, typ := GetReflectKindOrTypeValueOf(val)
 		if kind != reflect.Invalid {
 			kinds = append(kinds, kind)
@@ -193,12 +189,10 @@ func NewFuncMultiTypeMatch(
 	minIndirection int,
 	maxIndirection int,
 	required bool,
-	val1 interface{},
-	val2 interface{},
 	vals ...interface{},
 ) FuncTypeMatch {
 	return FuncTypeMatch{
-		typeMatch: NewMultiTypeMatch(minIndirection, maxIndirection, val1, val2, vals...),
+		typeMatch: NewMultiTypeMatch(minIndirection, maxIndirection, vals...),
 		required:  required,
 	}
 }
@@ -230,13 +224,11 @@ func (f *FuncMatcher) WithOptionalParamType(val interface{}, indirection ...int)
 func (f *FuncMatcher) WithParamOfTypes(
 	minIndirection int,
 	maxIndirection int,
-	val1 interface{},
-	val2 interface{},
 	vals ...interface{},
 ) *FuncMatcher {
 	f.paramTypes = append(
 		f.paramTypes,
-		NewFuncMultiTypeMatch(minIndirection, maxIndirection, true, val1, val2, vals...),
+		NewFuncMultiTypeMatch(minIndirection, maxIndirection, true, vals...),
 	)
 
 	return f
@@ -246,13 +238,11 @@ func (f *FuncMatcher) WithParamOfTypes(
 func (f *FuncMatcher) WithOptionalParamOfTypes(
 	minIndirection int,
 	maxIndirection int,
-	val1 interface{},
-	val2 interface{},
 	vals ...interface{},
 ) *FuncMatcher {
 	f.paramTypes = append(
 		f.paramTypes,
-		NewFuncMultiTypeMatch(minIndirection, maxIndirection, false, val1, val2, vals...),
+		NewFuncMultiTypeMatch(minIndirection, maxIndirection, false, vals...),
 	)
 
 	return f
@@ -260,10 +250,8 @@ func (f *FuncMatcher) WithOptionalParamOfTypes(
 
 // WithParams builder adds the given FuncTypeMatch objects to the parameters
 func (f *FuncMatcher) WithParams(
-	funcTypeMatch   FuncTypeMatch,
 	funcTypeMatches ...FuncTypeMatch,
 )  *FuncMatcher {
-	f.paramTypes = append(f.paramTypes, funcTypeMatch)
 	f.paramTypes = append(f.paramTypes, funcTypeMatches...)
 
 	return f
@@ -285,13 +273,11 @@ func (f *FuncMatcher) WithOptionalReturnType(val interface{}, indirection ...int
 func (f *FuncMatcher) WithReturnOfTypes(
 	minIndirection int,
 	maxIndirection int,
-	val1 interface{},
-	val2 interface{},
 	vals ...interface{},
 ) *FuncMatcher {
 	f.returnTypes = append(
 		f.returnTypes,
-		NewFuncMultiTypeMatch(minIndirection, maxIndirection, true, val1, val2, vals...),
+		NewFuncMultiTypeMatch(minIndirection, maxIndirection, true, vals...),
 	)
 
 	return f
@@ -301,13 +287,11 @@ func (f *FuncMatcher) WithReturnOfTypes(
 func (f *FuncMatcher) WithOptionalReturnOfTypes(
 	minIndirection int,
 	maxIndirection int,
-	val1 interface{},
-	val2 interface{},
 	vals ...interface{},
 ) *FuncMatcher {
 	f.returnTypes = append(
 		f.returnTypes,
-		NewFuncMultiTypeMatch(minIndirection, maxIndirection, false, val1, val2, vals...),
+		NewFuncMultiTypeMatch(minIndirection, maxIndirection, false, vals...),
 	)
 
 	return f
