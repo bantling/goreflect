@@ -3,6 +3,7 @@ package goreflect
 import (
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 // GetReflectTypeOf takes a value, reflect.Value wrapper, or reflect.Type wrapper and returns a reflect.Type wrapper.
@@ -44,7 +45,7 @@ func GetReflectKindOrTypeValueOf(val interface{}) (reflect.Kind, reflect.Type) {
 	return reflect.Invalid, typ
 }
 
-// TypeMatch describes a single match by ahy one of multiple kinds and/or types
+// TypeMatch describes a single match by any one of multiple kinds and/or types
 type TypeMatch struct {
 	kinds          []reflect.Kind
 	types          []reflect.Type
@@ -52,14 +53,82 @@ type TypeMatch struct {
 	maxIndirection int
 }
 
+// String returns a signature for the types matched, use vertical bars to separate multiple choices.
+// If pointer indirections are allowed, they occur once at the beginning.
+// If there are multiple pointer indirections, they are in parantheses.
+// If there are multiple type choices, they are in parantheses only if there is at least one pointer indirection
+// Examples:
+// "string"
+// "*string"
+// "(*|**)string"
+// "string|slice"
+// "*(string|slice)"
+// "(*|**)(string|slice)"
 func (v TypeMatch) String() string {
-	return fmt.Sprintf(
-		"TypeMatch: {kinds: %v, types: %v, minIndirection: %d, maxIndirection: %d}",
-		v.kinds,
-		v.types,
-		v.minIndirection,
-		v.maxIndirection,
-	)
+	var str strings.Builder
+
+	// Add pointer indirection(s)
+	numIndirections := 0
+	if v.maxIndirection > 0 {
+		numIndirections = v.maxIndirection - v.minIndirection + 1
+	}
+	multipleIndirections := numIndirections > 1
+	useBrackets := v.minIndirection == 0
+
+	if multipleIndirections {
+		if useBrackets {
+			str.WriteRune('[')
+		} else {
+			str.WriteRune('(')
+		}
+	}
+
+	for i := 1; i <= v.maxIndirection; i++ {
+		if i > 1 {
+			str.WriteRune('|')
+		}
+
+		str.WriteString(strings.Repeat("*", i))
+	}
+
+	if multipleIndirections {
+		if useBrackets {
+			str.WriteRune(']')
+		} else {
+			str.WriteRune(')')
+		}
+	}
+
+	// Add type(s), then kind(s)
+	needTypeParens := (numIndirections > 1) && ((len(v.types) + len(v.kinds)) > 1)
+	if needTypeParens {
+		str.WriteRune('(')
+	}
+
+	firstType := true
+	for _, typ := range v.types {
+		if !firstType {
+			str.WriteRune('|')
+		}
+		firstType = false
+
+		str.WriteString(typ.String())
+	}
+
+	for _, kind := range v.kinds {
+		if !firstType {
+			str.WriteRune('|')
+		}
+		firstType = false
+
+		str.WriteString(kind.String())
+	}
+
+	if needTypeParens {
+		str.WriteRune(')')
+	}
+
+	return str.String()
 }
 
 // NewTypeMatch constructs a TypeMatch
@@ -251,7 +320,7 @@ func (f *FuncMatcher) WithOptionalParamOfTypes(
 // WithParams builder adds the given FuncTypeMatch objects to the parameters
 func (f *FuncMatcher) WithParams(
 	funcTypeMatches ...FuncTypeMatch,
-)  *FuncMatcher {
+) *FuncMatcher {
 	f.paramTypes = append(f.paramTypes, funcTypeMatches...)
 
 	return f
@@ -299,7 +368,7 @@ func (f *FuncMatcher) WithOptionalReturnOfTypes(
 
 // WithReturns builder adds the given FuncTypeMatch objects to the returns
 func (f *FuncMatcher) WithReturns(
-	funcTypeMatch   FuncTypeMatch,
+	funcTypeMatch FuncTypeMatch,
 	funcTypeMatches ...FuncTypeMatch,
 ) *FuncMatcher {
 	f.returnTypes = append(f.returnTypes, funcTypeMatch)
@@ -397,3 +466,17 @@ func (f FuncMatcher) Matches(fn interface{}) bool {
 	_, _, matches := f.MatchingIndexes(fn)
 	return matches
 }
+
+// Signature returns a string representing the possible signature(s) this matcher will accept.
+// The string looks like a Go anonymous function declaration, except that if a given parameter or return type
+// has multiple choices, they are separated by vertical bars.
+// EG, "func (string|int, slice|struct) (string|int, error)"
+// func (f FuncMatcher) Signature() string {
+// 	var signature strings.Builder
+// 	signature.WriteString("func (")
+
+// 	// Add params
+// 	for _, paramType := range f.paramTypes {
+
+// 	}
+// }
