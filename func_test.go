@@ -24,6 +24,11 @@ func TestTypeMatch(t *testing.T) {
 	assert.False(t, tm.Matches(reflect.TypeOf((**int)(nil))))
 	assert.Equal(t, "int", tm.String())
 
+	ftm := FuncTypeMatch{typeMatch: tm, required: true}
+	assert.Equal(t, "int", ftm.String())
+	ftm.required = false
+	assert.Equal(t, "[int]", ftm.String())
+
 	tm = NewTypeMatch(0, 1)
 	assert.Equal(t, []reflect.Kind(nil), tm.kinds)
 	assert.Equal(t, []reflect.Type{reflect.TypeOf(0)}, tm.types)
@@ -34,6 +39,11 @@ func TestTypeMatch(t *testing.T) {
 	assert.False(t, tm.Matches(reflect.TypeOf((**int)(nil))))
 	assert.Equal(t, "*int", tm.String())
 
+	ftm = FuncTypeMatch{typeMatch: tm, required: true}
+	assert.Equal(t, "*int", ftm.String())
+	ftm.required = false
+	assert.Equal(t, "[*int]", ftm.String())
+
 	tm = NewTypeMatch(0, 1, 2)
 	assert.Equal(t, []reflect.Kind(nil), tm.kinds)
 	assert.Equal(t, []reflect.Type{reflect.TypeOf(0)}, tm.types)
@@ -43,6 +53,11 @@ func TestTypeMatch(t *testing.T) {
 	assert.True(t, tm.Matches(reflect.TypeOf((*int)(nil))))
 	assert.True(t, tm.Matches(reflect.TypeOf((**int)(nil))))
 	assert.Equal(t, "(*|**)int", tm.String())
+
+	ftm = FuncTypeMatch{typeMatch: tm, required: true}
+	assert.Equal(t, "(*|**)int", ftm.String())
+	ftm.required = false
+	assert.Equal(t, "[(*|**)int]", ftm.String())
 
 	type str struct{}
 
@@ -55,6 +70,11 @@ func TestTypeMatch(t *testing.T) {
 	assert.False(t, tm.Matches(reflect.TypeOf([]int{})))
 	assert.Equal(t, "struct", tm.String())
 
+	ftm = FuncTypeMatch{typeMatch: tm, required: true}
+	assert.Equal(t, "struct", ftm.String())
+	ftm.required = false
+	assert.Equal(t, "[struct]", ftm.String())
+
 	tm = NewTypeMatch(reflect.Slice, 1)
 	assert.Equal(t, []reflect.Kind{reflect.Slice}, tm.kinds)
 	assert.Equal(t, []reflect.Type(nil), tm.types)
@@ -63,6 +83,11 @@ func TestTypeMatch(t *testing.T) {
 	assert.False(t, tm.Matches(reflect.TypeOf(str{})))
 	assert.True(t, tm.Matches(reflect.TypeOf(&[]int{})))
 	assert.Equal(t, "*slice", tm.String())
+
+	ftm = FuncTypeMatch{typeMatch: tm, required: true}
+	assert.Equal(t, "*slice", ftm.String())
+	ftm.required = false
+	assert.Equal(t, "[*slice]", ftm.String())
 
 	tm = NewMultiTypeMatch(0, 1, 0, "")
 	assert.Equal(t, []reflect.Kind(nil), tm.kinds)
@@ -74,6 +99,27 @@ func TestTypeMatch(t *testing.T) {
 	assert.False(t, tm.Matches(reflect.TypeOf(str{})))
 	assert.Equal(t, "[*](int|string)", tm.String())
 
+	ftm = FuncTypeMatch{typeMatch: tm, required: true}
+	assert.Equal(t, "[*](int|string)", ftm.String())
+	ftm.required = false
+	assert.Equal(t, "[[*](int|string)]", ftm.String())
+
+	tm = NewMultiTypeMatch(0, 2, 0, "")
+	assert.Equal(t, []reflect.Kind(nil), tm.kinds)
+	assert.Equal(t, []reflect.Type{reflect.TypeOf(0), reflect.TypeOf("")}, tm.types)
+	assert.Equal(t, 0, tm.minIndirection)
+	assert.Equal(t, 2, tm.maxIndirection)
+	assert.True(t, tm.Matches(reflect.TypeOf(0)))
+	assert.True(t, tm.Matches(reflect.TypeOf((*string)(nil))))
+	assert.True(t, tm.Matches(reflect.TypeOf((**string)(nil))))
+	assert.False(t, tm.Matches(reflect.TypeOf(str{})))
+	assert.Equal(t, "[*|**](int|string)", tm.String())
+
+	ftm = FuncTypeMatch{typeMatch: tm, required: true}
+	assert.Equal(t, "[*|**](int|string)", ftm.String())
+	ftm.required = false
+	assert.Equal(t, "[[*|**](int|string)]", ftm.String())
+
 	tm = NewMultiTypeMatch(1, 2, 0, str{})
 	assert.Equal(t, []reflect.Kind(nil), tm.kinds)
 	assert.Equal(t, []reflect.Type{reflect.TypeOf(0), reflect.TypeOf(str{})}, tm.types)
@@ -83,6 +129,11 @@ func TestTypeMatch(t *testing.T) {
 	assert.False(t, tm.Matches(reflect.TypeOf(0)))
 	assert.True(t, tm.Matches(reflect.TypeOf((**str)(nil))))
 	assert.Equal(t, "(*|**)(int|goreflect.str)", tm.String())
+
+	ftm = FuncTypeMatch{typeMatch: tm, required: true}
+	assert.Equal(t, "(*|**)(int|goreflect.str)", ftm.String())
+	ftm.required = false
+	assert.Equal(t, "[(*|**)(int|goreflect.str)]", ftm.String())
 }
 
 func TestFuncMatcher(t *testing.T) {
@@ -103,6 +154,7 @@ func TestFuncMatcher(t *testing.T) {
 	assert.Equal(t, []int(nil), paramIndexes)
 	assert.Equal(t, []int(nil), returnIndexes)
 	assert.False(t, matches)
+	assert.Equal(t, "func()", matcher.String())
 
 	matcher = NewFuncMatcher().
 		WithParamType(0)
@@ -121,6 +173,7 @@ func TestFuncMatcher(t *testing.T) {
 	assert.Equal(t, []int(nil), paramIndexes)
 	assert.Equal(t, []int(nil), returnIndexes)
 	assert.False(t, matches)
+	assert.Equal(t, "func(int)", matcher.String())
 
 	matcher = NewFuncMatcher().
 		WithReturnType(0)
@@ -139,6 +192,7 @@ func TestFuncMatcher(t *testing.T) {
 	assert.Equal(t, []int(nil), paramIndexes)
 	assert.Equal(t, []int(nil), returnIndexes)
 	assert.False(t, matches)
+	assert.Equal(t, "func() int", matcher.String())
 
 	matcher = NewFuncMatcher().
 		WithParamType(0).
@@ -158,6 +212,7 @@ func TestFuncMatcher(t *testing.T) {
 	assert.Equal(t, []int(nil), paramIndexes)
 	assert.Equal(t, []int(nil), returnIndexes)
 	assert.False(t, matches)
+	assert.Equal(t, "func(int) int", matcher.String())
 
 	matcher = NewFuncMatcher().
 		WithParamType(0).
@@ -178,6 +233,7 @@ func TestFuncMatcher(t *testing.T) {
 	assert.Equal(t, []int(nil), paramIndexes)
 	assert.Equal(t, []int(nil), returnIndexes)
 	assert.False(t, matches)
+	assert.Equal(t, "func(int, string) int", matcher.String())
 
 	matcher = NewFuncMatcher().
 		WithParamType(0).
@@ -198,6 +254,7 @@ func TestFuncMatcher(t *testing.T) {
 	assert.Equal(t, []int(nil), paramIndexes)
 	assert.Equal(t, []int(nil), returnIndexes)
 	assert.False(t, matches)
+	assert.Equal(t, "func(int) (int, string)", matcher.String())
 
 	// Optional params/return values
 	matcher = NewFuncMatcher().
@@ -222,6 +279,7 @@ func TestFuncMatcher(t *testing.T) {
 	assert.Equal(t, []int(nil), paramIndexes)
 	assert.Equal(t, []int(nil), returnIndexes)
 	assert.False(t, matches)
+	assert.Equal(t, "func([int])", matcher.String())
 
 	matcher = NewFuncMatcher().
 		WithOptionalParamType(0).
@@ -256,6 +314,7 @@ func TestFuncMatcher(t *testing.T) {
 	assert.Equal(t, []int(nil), paramIndexes)
 	assert.Equal(t, []int(nil), returnIndexes)
 	assert.False(t, matches)
+	assert.Equal(t, "func([int]) [int]", matcher.String())
 
 	matcher = NewFuncMatcher().
 		WithParamType(0).
@@ -285,6 +344,7 @@ func TestFuncMatcher(t *testing.T) {
 	assert.Equal(t, []int(nil), paramIndexes)
 	assert.Equal(t, []int(nil), returnIndexes)
 	assert.False(t, matches)
+	assert.Equal(t, "func(int, [string])", matcher.String())
 
 	matcher = NewFuncMatcher().
 		WithOptionalParamType(0).
@@ -314,6 +374,7 @@ func TestFuncMatcher(t *testing.T) {
 	assert.Equal(t, []int(nil), paramIndexes)
 	assert.Equal(t, []int(nil), returnIndexes)
 	assert.False(t, matches)
+	assert.Equal(t, "func([int], string)", matcher.String())
 
 	matcher = NewFuncMatcher().
 		WithOptionalReturnType(0)
@@ -342,6 +403,7 @@ func TestFuncMatcher(t *testing.T) {
 	assert.Equal(t, []int(nil), paramIndexes)
 	assert.Equal(t, []int(nil), returnIndexes)
 	assert.False(t, matches)
+	assert.Equal(t, "func() [int]", matcher.String())
 
 	// reflect.Kind matching
 	type str struct{}
@@ -364,6 +426,7 @@ func TestFuncMatcher(t *testing.T) {
 	assert.Equal(t, []int(nil), paramIndexes)
 	assert.Equal(t, []int(nil), returnIndexes)
 	assert.False(t, matches)
+	assert.Equal(t, "func(int, [struct])", matcher.String())
 
 	matcher = NewFuncMatcher().
 		WithParamOfTypes(0, 0, 0, "").
@@ -389,6 +452,7 @@ func TestFuncMatcher(t *testing.T) {
 	assert.Equal(t, []int{0}, paramIndexes)
 	assert.Equal(t, []int{0}, returnIndexes)
 	assert.True(t, matches)
+	assert.Equal(t, "func(int|string) string|struct", matcher.String())
 
 	matcher = NewFuncMatcher().
 		WithOptionalParamOfTypes(0, 0, 0, "").
@@ -439,6 +503,7 @@ func TestFuncMatcher(t *testing.T) {
 	assert.Equal(t, []int(nil), paramIndexes)
 	assert.Equal(t, []int(nil), returnIndexes)
 	assert.False(t, matches)
+	assert.Equal(t, "func([int|string]) [[*](string|struct)]", matcher.String())
 
 	matcher = NewFuncMatcher().
 		WithParams(NewFuncTypeMatch(0, true)).
@@ -463,4 +528,5 @@ func TestFuncMatcher(t *testing.T) {
 	assert.Equal(t, []int(nil), paramIndexes)
 	assert.Equal(t, []int(nil), returnIndexes)
 	assert.False(t, matches)
+	assert.Equal(t, "func(int) [string]", matcher.String())
 }

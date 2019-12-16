@@ -243,6 +243,16 @@ type FuncTypeMatch struct {
 	required  bool
 }
 
+// String returns type signature, with [] around it if it is optional
+func (f FuncTypeMatch) String() string {
+	typeString := f.typeMatch.String()
+	if f.required {
+		return typeString
+	}
+
+	return fmt.Sprintf("[%s]", typeString)
+}
+
 // NewFuncTypeMatch constructs a FuncTypeMatch
 // See NewTypeMatch
 func NewFuncTypeMatch(val interface{}, required bool, indirection ...int) FuncTypeMatch {
@@ -270,6 +280,47 @@ func NewFuncMultiTypeMatch(
 type FuncMatcher struct {
 	paramTypes  []FuncTypeMatch
 	returnTypes []FuncTypeMatch
+}
+
+// String returns signature of matching functions
+func (m FuncMatcher) String() string {
+	var bldr strings.Builder
+
+	bldr.WriteString("func(")
+	first := true
+	for _, pt := range m.paramTypes {
+		if !first {
+			bldr.WriteString(", ")
+		}
+		first = false
+
+		bldr.WriteString(pt.String())
+	}
+	bldr.WriteRune(')')
+
+	if len(m.returnTypes) > 0 {
+		bldr.WriteRune(' ')
+		multiTypes := len(m.returnTypes) > 1
+		if multiTypes {
+			bldr.WriteRune('(')
+		}
+
+		first = true
+		for _, rt := range m.returnTypes {
+			if !first {
+				bldr.WriteString(", ")
+			}
+			first = false
+
+			bldr.WriteString(rt.String())
+		}
+
+		if multiTypes {
+			bldr.WriteRune(')')
+		}
+	}
+
+	return bldr.String()
 }
 
 // NewFuncMatcher constructs a FuncMatcher
