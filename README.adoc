@@ -45,10 +45,13 @@ matcher.MatchingIndexes(func(int, Foo) {})
 // Returns nil, nil, false
 matcher.MatchingIndexes(func(Foo) {}))
 
+// Returns "func(int, [struct])"
+matcher.String()
+
 // Match a func that accepts Foo or *Foo and returns *Bar
 matcher = NewFuncMatcher().
-  WithParamType(Foo{}, 0, 1). // Minimum pointer indirection = 0 (value), maximum = 1 (pointer)
-  WithReturnType(Bar{}, 1) // Minimum pointer indirection = maximum = 1
+  WithParamType(Foo{}, goreflect.Value, goreflect.Ptr). // Minimum pointer indirection = value, maximum = pointer
+  WithReturnType(Bar{}, goreflect.Ptr) // Minimum pointer indirection = maximum = pointer
 
 // Returns true
 matcher.matches(func(Foo) *Bar {return (*Bar)(nil)})
@@ -59,11 +62,22 @@ matcher.matches(func(**Foo) *Bar {return (*Bar)(nil)})
 matcher.matches(func(Foo) Bar {return Bar{}})
 matcher.matches(func(Foo) **Bar {return (**Bar)(nil)})
 
+// Returns []int{0}, int[]{0}, true
+matcher.MatchingIndexes(func(Foo) *Bar {return (*Bar)(nil)})
+matcher.MatchingIndexes(func(*Foo) *Bar {return (*Bar)(nil)})
+
+// Returns nil, nil, false
+matcher.MatchingIndexes(func(**Foo) *Bar {return (*Bar)(nil)})
+matcher.MatchingIndexes(func(Foo) Bar {return Bar{}})
+matcher.MatchingIndexes(func(Foo) **Bar {return (**Bar)(nil)})
+
+// Returns "func([*]Foo, *Bar)"
+matcher.String()
+
 // Match a func that accepts a required int or string and returns a required int or string.
-// First two zeros in calls below are min/max pointer indirection.
 matcher = NewFuncMatcher().
-  WithParamTypes(0, 0, 0, "").
-  WithReturnTypes(0, 0, "", 0)
+  WithParamTypes(goreflect.Value, goreflect.Value, 0, "").
+  WithReturnTypes(goreflect.Value, goreflect.Value, "", 0)
 
 // Returns true
 matcher.matches(func(int) int {return 0})
@@ -75,4 +89,7 @@ matcher.matches(func(string) string {return ""})
 matcher.matches(func() {})
 matcher.matches(func(int) {})
 matcher.matches(func() string {})
+
+// Returns "func(int|string) int|string"
+matcher.String()
 ----
