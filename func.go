@@ -461,12 +461,12 @@ func (f *FuncMatcher) WithReturns(
 // If the value is a matching function, the indexes of the matching parameter and return types are
 // also returned. If there are optional parameter and/or return types, this allows the caller to
 // determine which particular parameter and return types were actually used by the function.
-// Note that if a matching func has no parameters and/or return types, the index array(s) will be
-// zero length. By constrast, if the func does not match, both index arrays will be nil.
-func (f FuncMatcher) MatchingIndexes(fn interface{}) (params []int, returns []int, matches bool) {
+// Note that if a matching func has no parameters and/or return types, the related index map(s) will be zero length.
+// By constrast, if the func does not match, both index maps will be nil.
+func (f FuncMatcher) MatchingIndexes(fn interface{}) (params map[int]bool, returns map[int]bool, matches bool) {
 	// Indexes to return
-	paramIndexes := []int{}
-	returnIndexes := []int{}
+	paramIndexes := map[int]bool{}
+	returnIndexes := map[int]bool{}
 
 	// Get a reflect.Type wrapper
 	fnType := GetReflectTypeOf(fn)
@@ -485,7 +485,7 @@ func (f FuncMatcher) MatchingIndexes(fn interface{}) (params []int, returns []in
 			for _, paramType := range f.paramTypes {
 				// Advance to next loop if we have a matching param
 				if (paramIndex < numParams) && paramType.typeMatch.Matches(fnType.In(paramIndex)) {
-					paramIndexes = append(paramIndexes, paramIndex)
+					paramIndexes[paramIndex] = true
 					paramIndex++
 					continue
 				}
@@ -515,7 +515,7 @@ func (f FuncMatcher) MatchingIndexes(fn interface{}) (params []int, returns []in
 			for _, returnType := range f.returnTypes {
 				// Advance to next loop if we have a matching return
 				if (returnIndex < numReturns) && returnType.typeMatch.Matches(fnType.Out(returnIndex)) {
-					returnIndexes = append(returnIndexes, returnIndex)
+					returnIndexes[returnIndex] = true
 					returnIndex++
 					continue
 				}
