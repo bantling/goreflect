@@ -262,11 +262,30 @@ func (tm TypeMatch) Matches(t reflect.Type) bool {
 	return false
 }
 
+// Optionality describes whether a type is required or optional
+type Optionality bool
+
+const (
+	Required Optionality = true
+	Optional Optionality = false
+
+	requiredString = "required"
+	optionalString = "optional"
+)
+
+func (o Optionality) String() string {
+	if o {
+		return requiredString
+	}
+
+	return optionalString
+}
+
 // FuncTypeMatch is a TypeMatch for a function parameter or return type.
 // The difference is that a parameter or return type that may or may not be present in a matching function.
 type FuncTypeMatch struct {
 	typeMatch TypeMatch
-	required  bool
+	required  Optionality
 }
 
 // String returns type signature, with [] around it if it is optional
@@ -281,7 +300,7 @@ func (f FuncTypeMatch) String() string {
 
 // NewFuncTypeMatch constructs a FuncTypeMatch
 // See NewTypeMatch
-func NewFuncTypeMatch(val interface{}, required bool, indirection ...Indirection) FuncTypeMatch {
+func NewFuncTypeMatch(val interface{}, required Optionality, indirection ...Indirection) FuncTypeMatch {
 	return FuncTypeMatch{
 		typeMatch: NewTypeMatch(val, indirection...),
 		required:  required,
@@ -293,7 +312,7 @@ func NewFuncTypeMatch(val interface{}, required bool, indirection ...Indirection
 func NewFuncMultiTypeMatch(
 	minIndirection Indirection,
 	maxIndirection Indirection,
-	required bool,
+	required Optionality,
 	vals ...interface{},
 ) FuncTypeMatch {
 	return FuncTypeMatch{
@@ -356,13 +375,13 @@ func NewFuncMatcher() *FuncMatcher {
 
 // WithParamType builder adds the given param type
 func (f *FuncMatcher) WithParamType(val interface{}, indirection ...Indirection) *FuncMatcher {
-	f.paramTypes = append(f.paramTypes, NewFuncTypeMatch(val, true, indirection...))
+	f.paramTypes = append(f.paramTypes, NewFuncTypeMatch(val, Required, indirection...))
 	return f
 }
 
 // WithOptionalParamType builder adds the given param type
 func (f *FuncMatcher) WithOptionalParamType(val interface{}, indirection ...Indirection) *FuncMatcher {
-	f.paramTypes = append(f.paramTypes, NewFuncTypeMatch(val, false, indirection...))
+	f.paramTypes = append(f.paramTypes, NewFuncTypeMatch(val, Optional, indirection...))
 	return f
 }
 
@@ -374,7 +393,7 @@ func (f *FuncMatcher) WithParamOfTypes(
 ) *FuncMatcher {
 	f.paramTypes = append(
 		f.paramTypes,
-		NewFuncMultiTypeMatch(minIndirection, maxIndirection, true, vals...),
+		NewFuncMultiTypeMatch(minIndirection, maxIndirection, Required, vals...),
 	)
 
 	return f
@@ -388,7 +407,7 @@ func (f *FuncMatcher) WithOptionalParamOfTypes(
 ) *FuncMatcher {
 	f.paramTypes = append(
 		f.paramTypes,
-		NewFuncMultiTypeMatch(minIndirection, maxIndirection, false, vals...),
+		NewFuncMultiTypeMatch(minIndirection, maxIndirection, Optional, vals...),
 	)
 
 	return f
@@ -405,13 +424,13 @@ func (f *FuncMatcher) WithParams(
 
 // WithReturnType builder adds the given return type
 func (f *FuncMatcher) WithReturnType(val interface{}, indirection ...Indirection) *FuncMatcher {
-	f.returnTypes = append(f.returnTypes, NewFuncTypeMatch(val, true, indirection...))
+	f.returnTypes = append(f.returnTypes, NewFuncTypeMatch(val, Required, indirection...))
 	return f
 }
 
 // WithOptionalReturnType builder adds the given return type
 func (f *FuncMatcher) WithOptionalReturnType(val interface{}, indirection ...Indirection) *FuncMatcher {
-	f.returnTypes = append(f.returnTypes, NewFuncTypeMatch(val, false, indirection...))
+	f.returnTypes = append(f.returnTypes, NewFuncTypeMatch(val, Optional, indirection...))
 	return f
 }
 
@@ -423,7 +442,7 @@ func (f *FuncMatcher) WithReturnOfTypes(
 ) *FuncMatcher {
 	f.returnTypes = append(
 		f.returnTypes,
-		NewFuncMultiTypeMatch(minIndirection, maxIndirection, true, vals...),
+		NewFuncMultiTypeMatch(minIndirection, maxIndirection, Required, vals...),
 	)
 
 	return f
@@ -437,7 +456,7 @@ func (f *FuncMatcher) WithOptionalReturnOfTypes(
 ) *FuncMatcher {
 	f.returnTypes = append(
 		f.returnTypes,
-		NewFuncMultiTypeMatch(minIndirection, maxIndirection, false, vals...),
+		NewFuncMultiTypeMatch(minIndirection, maxIndirection, Optional, vals...),
 	)
 
 	return f

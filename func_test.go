@@ -24,7 +24,7 @@ func TestTypeMatch(t *testing.T) {
 	assert.False(t, tm.Matches(reflect.TypeOf((**int)(nil))))
 	assert.Equal(t, "int", tm.String())
 
-	ftm := FuncTypeMatch{typeMatch: tm, required: true}
+	ftm := FuncTypeMatch{typeMatch: tm, required: Required}
 	assert.Equal(t, "int", ftm.String())
 	ftm.required = false
 	assert.Equal(t, "[int]", ftm.String())
@@ -39,7 +39,7 @@ func TestTypeMatch(t *testing.T) {
 	assert.False(t, tm.Matches(reflect.TypeOf((**int)(nil))))
 	assert.Equal(t, "*int", tm.String())
 
-	ftm = FuncTypeMatch{typeMatch: tm, required: true}
+	ftm = FuncTypeMatch{typeMatch: tm, required: Required}
 	assert.Equal(t, "*int", ftm.String())
 	ftm.required = false
 	assert.Equal(t, "[*int]", ftm.String())
@@ -54,7 +54,7 @@ func TestTypeMatch(t *testing.T) {
 	assert.True(t, tm.Matches(reflect.TypeOf((**int)(nil))))
 	assert.Equal(t, "(*|**)int", tm.String())
 
-	ftm = FuncTypeMatch{typeMatch: tm, required: true}
+	ftm = FuncTypeMatch{typeMatch: tm, required: Required}
 	assert.Equal(t, "(*|**)int", ftm.String())
 	ftm.required = false
 	assert.Equal(t, "[(*|**)int]", ftm.String())
@@ -70,7 +70,7 @@ func TestTypeMatch(t *testing.T) {
 	assert.False(t, tm.Matches(reflect.TypeOf(map[int]bool{})))
 	assert.Equal(t, "struct", tm.String())
 
-	ftm = FuncTypeMatch{typeMatch: tm, required: true}
+	ftm = FuncTypeMatch{typeMatch: tm, required: Required}
 	assert.Equal(t, "struct", ftm.String())
 	ftm.required = false
 	assert.Equal(t, "[struct]", ftm.String())
@@ -84,7 +84,7 @@ func TestTypeMatch(t *testing.T) {
 	assert.True(t, tm.Matches(reflect.TypeOf(&[]int{})))
 	assert.Equal(t, "*slice", tm.String())
 
-	ftm = FuncTypeMatch{typeMatch: tm, required: true}
+	ftm = FuncTypeMatch{typeMatch: tm, required: Required}
 	assert.Equal(t, "*slice", ftm.String())
 	ftm.required = false
 	assert.Equal(t, "[*slice]", ftm.String())
@@ -99,9 +99,9 @@ func TestTypeMatch(t *testing.T) {
 	assert.False(t, tm.Matches(reflect.TypeOf(str{})))
 	assert.Equal(t, "[*](int|string)", tm.String())
 
-	ftm = FuncTypeMatch{typeMatch: tm, required: true}
+	ftm = FuncTypeMatch{typeMatch: tm, required: Required}
 	assert.Equal(t, "[*](int|string)", ftm.String())
-	ftm.required = false
+	ftm.required = Optional
 	assert.Equal(t, "[[*](int|string)]", ftm.String())
 
 	tm = NewMultiTypeMatch(Value, PtrToPtr, 0, "")
@@ -115,9 +115,9 @@ func TestTypeMatch(t *testing.T) {
 	assert.False(t, tm.Matches(reflect.TypeOf(str{})))
 	assert.Equal(t, "[*|**](int|string)", tm.String())
 
-	ftm = FuncTypeMatch{typeMatch: tm, required: true}
+	ftm = FuncTypeMatch{typeMatch: tm, required: Required}
 	assert.Equal(t, "[*|**](int|string)", ftm.String())
-	ftm.required = false
+	ftm.required = Optional
 	assert.Equal(t, "[[*|**](int|string)]", ftm.String())
 
 	tm = NewMultiTypeMatch(Ptr, PtrToPtr, 0, str{})
@@ -130,9 +130,9 @@ func TestTypeMatch(t *testing.T) {
 	assert.True(t, tm.Matches(reflect.TypeOf((**str)(nil))))
 	assert.Equal(t, "(*|**)(int|goreflect.str)", tm.String())
 
-	ftm = FuncTypeMatch{typeMatch: tm, required: true}
+	ftm = FuncTypeMatch{typeMatch: tm, required: Required}
 	assert.Equal(t, "(*|**)(int|goreflect.str)", ftm.String())
-	ftm.required = false
+	ftm.required = Optional
 	assert.Equal(t, "[(*|**)(int|goreflect.str)]", ftm.String())
 }
 
@@ -575,8 +575,8 @@ func TestFuncMatcher(t *testing.T) {
 	falseTester(matcher, func() int { return 0 })
 
 	matcher = NewFuncMatcher().
-		WithParams(NewFuncTypeMatch(0, true)).
-		WithReturns(NewFuncTypeMatch("", false))
+		WithParams(NewFuncTypeMatch(0, Required)).
+		WithReturns(NewFuncTypeMatch("", Optional))
 	fn = func(int) {}
 	paramTypes, returnTypes, matches = matcher.MatchingTypes(fn)
 	assert.Equal(t, map[int]reflect.Type{0: reflect.TypeOf(0)}, paramTypes)
