@@ -454,106 +454,141 @@ func (f *FuncMatcher) WithReturns(
 	return f
 }
 
-// MatchingIndexes returns true if the given value matches the parameter and return types of this matcher.
+// MatchingTypes returns a set of matched param types, a set of matche returned types,
+// and true if the given value matches the parameter and return types of this matcher.
 // The value passed can be a function object, a reflect.Value that wraps a function object,
 // or a reflect.Type that wraps a function type.
 // If the value is not any of the above types, false is returned.
-// If the value is a matching function, the indexes of the matching parameter and return types are
+// If the value is a matching function, the types of the matching parameter and return types are
 // also returned. If there are optional parameter and/or return types, this allows the caller to
-// determine which particular parameter and return types were actually used by the function.
+// determine which particular parameter and return types were actually used by the function, as
+// optional types indexs that were not matched will be mapped to nil.
 // Note that if a matching func has no parameters and/or return types, the related index map(s) will be zero length.
 // By constrast, if the func does not match, both index maps will be nil.
-func (f FuncMatcher) MatchingIndexes(fn interface{}) (params map[int]bool, returns map[int]bool, matches bool) {
-	// Indexes to return
-	paramIndexes := map[int]bool{}
-	returnIndexes := map[int]bool{}
+func (f FuncMatcher) MatchingTypes(fn interface{}) (map[int]reflect.Type, map[int]reflect.Type, bool) {
+	var (
+		paramTypes = map[int]reflect.Type{}
+		returnTypes = map[int]reflect.Type{}
+		matches bool = true
+	)
 
-	// Get a reflect.Type wrapper
+	// Get a reflect.Type wrapper for fn
 	fnType := GetReflectTypeOf(fn)
 
-	if fnType.Kind() == reflect.Func {
-		// Iterate function params
-		paramIndex := 0
-		numParams := fnType.NumIn()
-		// If we have no param types to match, then the func must accept no params
-		if len(f.paramTypes) == 0 {
-			if numParams != 0 {
-				return nil, nil, false
-			}
-		} else {
-			// See if our params match that of the function
-			for _, paramType := range f.paramTypes {
-				// Advance to next loop if we have a matching param
-				if (paramIndex < numParams) && paramType.typeMatch.Matches(fnType.In(paramIndex)) {
-					paramIndexes[paramIndex] = true
-					paramIndex++
-					continue
-				}
-
-				// Required params must match
-				if paramType.required {
-					return nil, nil, false
-				}
-			}
-		}
-
-		// If there are still parameters we haven't matched, it's not a match
-		if paramIndex < numParams {
-			return nil, nil, false
-		}
-
-		// Iterate return values
-		returnIndex := 0
-		numReturns := fnType.NumOut()
-		// If we have no return types to match, then the func must return no values
-		if len(f.returnTypes) == 0 {
-			if numReturns != 0 {
-				return nil, nil, false
-			}
-		} else {
-			// See if our returns match that of the function
-			for _, returnType := range f.returnTypes {
-				// Advance to next loop if we have a matching return
-				if (returnIndex < numReturns) && returnType.typeMatch.Matches(fnType.Out(returnIndex)) {
-					returnIndexes[returnIndex] = true
-					returnIndex++
-					continue
-				}
-
-				// Required returns must match
-				if returnType.required {
-					return nil, nil, false
-				}
-			}
-		}
-
-		// If there are still returns we haven't matched, it's not a match
-		if returnIndex < numReturns {
-			return nil, nil, false
-		}
-	} else {
+	if fnType.Kind() != reflect.Func {
+		// Any non-func value can't be a match
 		return nil, nil, false
 	}
 
-	return paramIndexes, returnIndexes, true
+	// Iterate function params
+	numParams := fnType.NumIn()
+	var (
+		paramIndex int
+		paramType FuncTypeMatch
+		fnParamIndex int
+	)
+	// If we have no param types to match, then the func must accept no params
+	if len(f.paramTypes) == 0 {
+		if numParams != 0 {
+			return nil, nil, false
+		}
+	} else {
+		// See if our params match that of the function
+		for paramIndex, paramType = range f.paramTypes {
+			// Advance to next loop if we have a matching param
+			if fnParamIndex < numParams {
+				actualParamType := fnType.In(fnParamIndex)
+				if paramType.typeMatch.Matches(actualParamType) {
+					paramTypes[paramIndex] = actualParamType
+					fnParamIndex++
+					continue
+				}
+			}
+
+			// Required params must match
+			if paramType.required {
+				return nil, nil, false
+			}
+		}
+	}
+
+	// If there are still parameters we haven't matched, it's not a match
+	if fnParamIndex < numParams {
+		return nil, nil, false
+	}
+
+	// Iterate return values
+	numReturns := fnType.NumOut()
+	var (
+		returnIndex int
+		returnType FuncTypeMatch
+		fnReturnIndex int
+	)
+	// If we have no return types to match, then the func must return no values
+	if len(f.returnTypes) == 0 {
+		if numReturns != 0 {
+			return nil, nil, false
+		}
+	} else {
+		// See if our returns match that of the function
+		for returnIndex, returnType = range f.returnTypes {
+			// Advance to next loop if we have a matching return
+			if fnReturnIndex < numReturns {
+				actualReturnType := fnType.Out(returnIndex)
+				if returnType.typeMatch.Matches(actualReturnType) {
+					returnTypes[returnIndex] = actualReturnType
+					fnReturnIndex++
+					continue
+				}
+			}
+
+			// Required returns must match
+			if returnType.required {
+				return nil, nil, false
+			}
+		}
+	}
+
+	// If there are still returns we haven't matched, it's not a match
+	if fnReturnIndex < numReturns {
+		return nil, nil, false
+	}
+
+	return paramTypes, returnTypes, matches
 }
 
-// Matches simply calls MatchingIndexes and returns only the bool result, for simple yes/no matching
+// MatchingIndexes is like MatchingTypes, but returns true or false for matching indexes rather than type or nil.
+func (f FuncMatcher) MatchingIndexes(fn interface{}) (map[int]bool, map[int]bool, bool) {
+	// Leverage MatchingTypes
+	var (
+		paramIndexes = map[int]bool{}
+		returnIndexes = map[int]bool{}
+	)
+	paramTypes, returnTypes, matches := f.MatchingTypes(fn)
+
+	// Convert return results
+	if matches {
+		for i, paramType := range paramTypes {
+			if paramType != nil {
+				paramIndexes[i] = true
+			}
+		}
+
+		for i, returnType := range returnTypes {
+			if returnType != nil {
+				returnIndexes[i] = true
+			}
+		}
+
+		return paramIndexes, returnIndexes, matches
+	}
+
+	return nil, nil, false
+}
+
+// Matches simply calls MatchingTypes and returns only the bool result, for simple yes/no matching
 func (f FuncMatcher) Matches(fn interface{}) bool {
-	_, _, matches := f.MatchingIndexes(fn)
+	_, _, matches := f.MatchingTypes(fn)
+
 	return matches
 }
-
-// Signature returns a string representing the possible signature(s) this matcher will accept.
-// The string looks like a Go anonymous function declaration, except that if a given parameter or return type
-// has multiple choices, they are separated by vertical bars.
-// EG, "func (string|int, slice|struct) (string|int, error)"
-// func (f FuncMatcher) Signature() string {
-// 	var signature strings.Builder
-// 	signature.WriteString("func (")
-
-// 	// Add params
-// 	for _, paramType := range f.paramTypes {
-
-// 	}
-// }
