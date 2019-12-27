@@ -55,8 +55,8 @@ const (
 
 var (
 	indirectionToString = map[Indirection]string{
-		Value: "Value",
-		Ptr: "Ptr",
+		Value:    "Value",
+		Ptr:      "Ptr",
 		PtrToPtr: "PtrToPtr",
 	}
 )
@@ -262,6 +262,30 @@ func (tm TypeMatch) Matches(t reflect.Type) bool {
 	return false
 }
 
+// Types is the types accessor
+func (tm TypeMatch) Types() []reflect.Type {
+	typesCopy := make([]reflect.Type, len(tm.types))
+	copy(typesCopy, tm.types)
+	return typesCopy
+}
+
+// Kinds is the kinds accessor
+func (tm TypeMatch) Kinds() []reflect.Kind {
+	kindsCopy := make([]reflect.Kind, len(tm.kinds))
+	copy(kindsCopy, tm.kinds)
+	return kindsCopy
+}
+
+// MinIndirection is the minIndirection accessor
+func (tm TypeMatch) MinIndirection() Indirection {
+	return tm.minIndirection
+}
+
+// MaxIndirection is the maxIndirection accessor
+func (tm TypeMatch) MaxIndirection() Indirection {
+	return tm.maxIndirection
+}
+
 // Optionality describes whether a type is required or optional
 type Optionality bool
 
@@ -319,6 +343,16 @@ func NewFuncMultiTypeMatch(
 		typeMatch: NewMultiTypeMatch(minIndirection, maxIndirection, vals...),
 		required:  required,
 	}
+}
+
+// TypeMatch accessor
+func (ftm FuncTypeMatch) TypeMatch() TypeMatch {
+	return ftm.typeMatch
+}
+
+// Required accessor
+func (ftm FuncTypeMatch) Required() Optionality {
+	return ftm.required
 }
 
 // FuncMatcher describes desired value types
@@ -486,9 +520,9 @@ func (f *FuncMatcher) WithReturns(
 // By constrast, if the func does not match, both index maps will be nil.
 func (f FuncMatcher) MatchingTypes(fn interface{}) (map[int]reflect.Type, map[int]reflect.Type, bool) {
 	var (
-		paramTypes = map[int]reflect.Type{}
-		returnTypes = map[int]reflect.Type{}
-		matches bool = true
+		paramTypes       = map[int]reflect.Type{}
+		returnTypes      = map[int]reflect.Type{}
+		matches     bool = true
 	)
 
 	// Get a reflect.Type wrapper for fn
@@ -502,8 +536,8 @@ func (f FuncMatcher) MatchingTypes(fn interface{}) (map[int]reflect.Type, map[in
 	// Iterate function params
 	numParams := fnType.NumIn()
 	var (
-		paramIndex int
-		paramType FuncTypeMatch
+		paramIndex   int
+		paramType    FuncTypeMatch
 		fnParamIndex int
 	)
 	// If we have no param types to match, then the func must accept no params
@@ -539,8 +573,8 @@ func (f FuncMatcher) MatchingTypes(fn interface{}) (map[int]reflect.Type, map[in
 	// Iterate return values
 	numReturns := fnType.NumOut()
 	var (
-		returnIndex int
-		returnType FuncTypeMatch
+		returnIndex   int
+		returnType    FuncTypeMatch
 		fnReturnIndex int
 	)
 	// If we have no return types to match, then the func must return no values
@@ -580,7 +614,7 @@ func (f FuncMatcher) MatchingTypes(fn interface{}) (map[int]reflect.Type, map[in
 func (f FuncMatcher) MatchingIndexes(fn interface{}) (map[int]bool, map[int]bool, bool) {
 	// Leverage MatchingTypes
 	var (
-		paramIndexes = map[int]bool{}
+		paramIndexes  = map[int]bool{}
 		returnIndexes = map[int]bool{}
 	)
 	paramTypes, returnTypes, matches := f.MatchingTypes(fn)
@@ -610,4 +644,18 @@ func (f FuncMatcher) Matches(fn interface{}) bool {
 	_, _, matches := f.MatchingTypes(fn)
 
 	return matches
+}
+
+// ParamTypes is the paramTypes accessor
+func (f FuncMatcher) ParamTypes() []FuncTypeMatch {
+	paramTypesCopy := make([]FuncTypeMatch, len(f.paramTypes))
+	copy(paramTypesCopy, f.paramTypes)
+	return paramTypesCopy
+}
+
+// ReturnTypes is the returnTypes accessor
+func (f FuncMatcher) ReturnTypes() []FuncTypeMatch {
+	returnTypesCopy := make([]FuncTypeMatch, len(f.returnTypes))
+	copy(returnTypesCopy, f.returnTypes)
+	return returnTypesCopy
 }
