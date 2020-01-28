@@ -221,8 +221,13 @@ func NewMultiTypeMatch(
 	}
 }
 
-// Matches returns true if this type matches the given reflect type
+// Matches returns true if this type matches the given reflect type.
+// If the given type is nil, false is returned.
 func (tm TypeMatch) Matches(t reflect.Type) bool {
+	if t == nil {
+		return false
+	}
+
 	// Get the given type as a zero indirection value type, counting indirections
 	valueType := t
 	indirection := Value
