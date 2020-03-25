@@ -538,7 +538,7 @@ func TestFuncMatcher(t *testing.T) {
 	paramIndexes, returnIndexes, matches = matcher.MatchingIndexes(fn)
 	assert.Equal(t, map[int]bool{0: true}, paramIndexes)
 	assert.Equal(t, map[int]bool{0: true}, returnIndexes)
-	assert.True(t, matcher.Matches(fn))
+	assert.True(t, matches)
 	matches = matcher.Matches(fn)
 	assert.True(t, matches)
 
@@ -555,7 +555,7 @@ func TestFuncMatcher(t *testing.T) {
 	paramIndexes, returnIndexes, matches = matcher.MatchingIndexes(fn)
 	assert.Equal(t, map[int]bool{}, paramIndexes)
 	assert.Equal(t, map[int]bool{}, returnIndexes)
-	assert.True(t, matcher.Matches(fn))
+	assert.True(t, matches)
 	matches = matcher.Matches(fn)
 	assert.True(t, matches)
 	assert.Equal(t, "func([int|string]) [[*](string|struct)]", matcher.String())
@@ -567,7 +567,7 @@ func TestFuncMatcher(t *testing.T) {
 	paramIndexes, returnIndexes, matches = matcher.MatchingIndexes(fn)
 	assert.Equal(t, map[int]bool{0: true}, paramIndexes)
 	assert.Equal(t, map[int]bool{0: true}, returnIndexes)
-	assert.True(t, matcher.Matches(fn))
+	assert.True(t, matches)
 	matches = matcher.Matches(fn)
 	assert.True(t, matches)
 
@@ -584,7 +584,7 @@ func TestFuncMatcher(t *testing.T) {
 	paramIndexes, returnIndexes, matches = matcher.MatchingIndexes(fn)
 	assert.Equal(t, map[int]bool{0: true}, paramIndexes)
 	assert.Equal(t, map[int]bool{}, returnIndexes)
-	assert.True(t, matcher.Matches(fn))
+	assert.True(t, matches)
 	matches = matcher.Matches(fn)
 	assert.True(t, matches)
 	assert.Equal(t, "func(int) [string]", matcher.String())
@@ -596,10 +596,28 @@ func TestFuncMatcher(t *testing.T) {
 	paramIndexes, returnIndexes, matches = matcher.MatchingIndexes(fn)
 	assert.Equal(t, map[int]bool{0: true}, paramIndexes)
 	assert.Equal(t, map[int]bool{0: true}, returnIndexes)
-	assert.True(t, matcher.Matches(fn))
+	assert.True(t, matches)
 	matches = matcher.Matches(fn)
 	assert.True(t, matches)
 
 	falseTester(matcher, func(str) {})
 	falseTester(matcher, func() int { return 0 })
+
+	matcher = NewFuncMatcher().
+		WithOptionalParamType(0).
+		WithOptionalParamType("").
+		WithOptionalReturnType(0).
+		WithOptionalReturnType("")
+	fn = func(string) string { return "" }
+	paramTypes, returnTypes, matches = matcher.MatchingTypes(fn)
+	assert.Equal(t, map[int]reflect.Type{1: reflect.TypeOf("")}, paramTypes)
+	assert.Equal(t, map[int]reflect.Type{1: reflect.TypeOf("")}, returnTypes)
+	paramIndexes, returnIndexes, matches = matcher.MatchingIndexes(fn)
+	assert.Equal(t, map[int]bool{1: true}, paramIndexes)
+	assert.Equal(t, map[int]bool{1: true}, returnIndexes)
+	assert.True(t, matches)
+	matches = matcher.Matches(fn)
+	assert.True(t, matches)
+
+	falseTester(matcher, func(str) {})
 }

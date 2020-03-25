@@ -592,7 +592,7 @@ func (f FuncMatcher) MatchingTypes(fn interface{}) (map[int]reflect.Type, map[in
 		for returnIndex, returnType = range f.returnTypes {
 			// Advance to next loop if we have a matching return
 			if fnReturnIndex < numReturns {
-				actualReturnType := fnType.Out(returnIndex)
+				actualReturnType := fnType.Out(fnReturnIndex)
 				if returnType.typeMatch.Matches(actualReturnType) {
 					returnTypes[returnIndex] = actualReturnType
 					fnReturnIndex++
