@@ -10,9 +10,9 @@ import (
 
 func TestValuePrinter(t *testing.T) {
 	var (
-		p   = &ValuePrinter{}
+		p   = NewValuePrinter()
 		w   = NewValueDepthFirstWalker(NewValueVisitorAdapter(p))
-		pp  = &ValuePrinter{WithAddress: true}
+		pp  = NewValuePrinter().WithQuotedStrings().WithAddresses()
 		wp  = NewValueDepthFirstWalker(NewValueVisitorAdapter(pp))
 		ci  chan int
 		fn  = func(int) string { return "" }
@@ -122,7 +122,7 @@ func TestValuePrinter(t *testing.T) {
 
 	// String
 	w.Walk("foo")
-	assert.Equal(t, `"foo"`, p.Result())
+	assert.Equal(t, "foo", p.Result())
 	wp.Walk("bar")
 	assert.Equal(t, `"bar"`, pp.Result())
 
@@ -158,13 +158,13 @@ func TestValuePrinter(t *testing.T) {
 
 	// Map
 	w.Walk(mp)
-	assert.Equal(t, `map[int]string{8: "9"}`, p.Result())
+	assert.Equal(t, "map[int]string{8: 9}", p.Result())
 	wp.Walk(mp)
 	assert.Equal(t, fmt.Sprintf(`map[int]string@[%p]{8: "9"}`, mp), pp.Result())
 
 	// Struct
 	w.Walk(st)
-	assert.Equal(t, `struct { Foo string; Bar int }{Foo: "fooish", Bar: 10}`, p.Result())
+	assert.Equal(t, "struct { Foo string; Bar int }{Foo: fooish, Bar: 10}", p.Result())
 	wp.Walk(st)
 	assert.Equal(t, `struct { Foo string; Bar int }{Foo: "fooish", Bar: 10}`, pp.Result())
 

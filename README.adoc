@@ -105,14 +105,14 @@ matcher.matches(func() string {})
 // Returns "func(int|string) int|string"
 matcher.String()
 
-// Print out a structure with pointers
+// Print out values
 var (
   i      = 5
   ptr    = &i
   ptrptr = &ptr
-  p      = &ValuePrinter{}
+  p      = NewValuePrinter()
   w      = NewValueDepthFirstWalker(NewValueVisitorAdapter(p))
-  pp     = &ValuePrinter{WithAddress: true}
+  pp     = NewValuePrinter().WithAddresses()
   wp     = NewValueDepthFirstWalker(NewValueVisitorAdapter(pp))
 )
 
