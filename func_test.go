@@ -7,12 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetReflectTypeOf(t *testing.T) {
-	assert.Equal(t, reflect.TypeOf(0), GetReflectTypeOf(0))
-	assert.Equal(t, reflect.TypeOf(0), GetReflectTypeOf(reflect.ValueOf(0)))
-	assert.Equal(t, reflect.TypeOf(0), GetReflectTypeOf(reflect.TypeOf(0)))
-}
-
 func TestTypeMatch(t *testing.T) {
 	tm := NewTypeMatch(0)
 	assert.Equal(t, []reflect.Kind(nil), tm.kinds)
@@ -44,11 +38,11 @@ func TestTypeMatch(t *testing.T) {
 	ftm.required = false
 	assert.Equal(t, "[*int]", ftm.String())
 
-	tm = NewTypeMatch(0, Ptr, PtrToPtr)
+	tm = NewTypeMatch(0, Ptr, PtrPtr)
 	assert.Equal(t, []reflect.Kind(nil), tm.kinds)
 	assert.Equal(t, []reflect.Type{reflect.TypeOf(0)}, tm.types)
 	assert.Equal(t, Ptr, tm.minIndirection)
-	assert.Equal(t, PtrToPtr, tm.maxIndirection)
+	assert.Equal(t, PtrPtr, tm.maxIndirection)
 	assert.False(t, tm.Matches(reflect.TypeOf(0)))
 	assert.True(t, tm.Matches(reflect.TypeOf((*int)(nil))))
 	assert.True(t, tm.Matches(reflect.TypeOf((**int)(nil))))
@@ -104,11 +98,11 @@ func TestTypeMatch(t *testing.T) {
 	ftm.required = Optional
 	assert.Equal(t, "[[*](int|string)]", ftm.String())
 
-	tm = NewMultiTypeMatch(Value, PtrToPtr, 0, "")
+	tm = NewMultiTypeMatch(Value, PtrPtr, 0, "")
 	assert.Equal(t, []reflect.Kind(nil), tm.kinds)
 	assert.Equal(t, []reflect.Type{reflect.TypeOf(0), reflect.TypeOf("")}, tm.types)
 	assert.Equal(t, Value, tm.minIndirection)
-	assert.Equal(t, PtrToPtr, tm.maxIndirection)
+	assert.Equal(t, PtrPtr, tm.maxIndirection)
 	assert.True(t, tm.Matches(reflect.TypeOf(0)))
 	assert.True(t, tm.Matches(reflect.TypeOf((*string)(nil))))
 	assert.True(t, tm.Matches(reflect.TypeOf((**string)(nil))))
@@ -120,11 +114,11 @@ func TestTypeMatch(t *testing.T) {
 	ftm.required = Optional
 	assert.Equal(t, "[[*|**](int|string)]", ftm.String())
 
-	tm = NewMultiTypeMatch(Ptr, PtrToPtr, 0, str{})
+	tm = NewMultiTypeMatch(Ptr, PtrPtr, 0, str{})
 	assert.Equal(t, []reflect.Kind(nil), tm.kinds)
 	assert.Equal(t, []reflect.Type{reflect.TypeOf(0), reflect.TypeOf(str{})}, tm.types)
 	assert.Equal(t, Ptr, tm.minIndirection)
-	assert.Equal(t, PtrToPtr, tm.maxIndirection)
+	assert.Equal(t, PtrPtr, tm.maxIndirection)
 	assert.True(t, tm.Matches(reflect.TypeOf((*int)(nil))))
 	assert.False(t, tm.Matches(reflect.TypeOf(0)))
 	assert.True(t, tm.Matches(reflect.TypeOf((**str)(nil))))

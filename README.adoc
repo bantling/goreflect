@@ -15,6 +15,18 @@ Simplify usage of reflection, to make it less tedious and technical:
 ** Any parameter or return type position can be optional, not just at the end
 ** Return just a bool to indicate whether or not a function matches
 ** Fluent api
+* Examine references
+** Deref a reflect.Value or reflect.Type to get to the on-pointer value/type pointed to
+** Fully deref all parts of a reflect.Type (eg *[]**[]***int becomes [][]int)
+** Get the number of indirections in a type (eg ***int = 3)
+** Create any numberof indiretions to a value (eg given an int, create a **int that points to it)
+* Visit a value
+** Any kind of value except for Invalid, Uintptr and UnsafePointer
+** Only implement the methods your visiter needs, ignoring the rest
+** ValueVisitorAdapter adapts an implementation of a subset of visiter methods into an implementation of all of them
+** ValuePrinter prints out values by fully dereferencing them, printing addresses if desired
+** ValuePrinter is really useful for debug logging types like slices of pointers
+** ValueDepthFirstWalker walks a value, executing methods of a visiter
 
 == Examples
 
@@ -92,4 +104,39 @@ matcher.matches(func() string {})
 
 // Returns "func(int|string) int|string"
 matcher.String()
+
+// Print out a structure with pointers
+var (
+  i      = 5
+  ptr    = &i
+  ptrptr = &ptr
+  p      = &ValuePrinter{}
+  w      = NewValueDepthFirstWalker(NewValueVisitorAdapter(p))
+  pp     = &ValuePrinter{WithAddress: true}
+  wp     = NewValueDepthFirstWalker(NewValueVisitorAdapter(pp))
+)
+
+// Returns "5"
+w.walk(i)
+p.Result()
+
+// Returns "5"
+wp.walk(i)
+pp.Result()
+
+// Returns "&5"
+w.walk(ptr)
+p.Result()
+
+// Returns "&@[0x...]5"
+wp.walk(ptr)
+pp.Result()
+
+// Returns "&&5"
+w.walk(ptrptr)
+p.Result()
+
+// Returns "&@[0x...]&@[0x...]5"
+wp.walk(ptrptr)
+pp.Result()
 ----

@@ -6,72 +6,12 @@ import (
 	"strings"
 )
 
-// GetReflectTypeOf takes a value, reflect.Value wrapper, or reflect.Type wrapper and returns a reflect.Type wrapper.
-func GetReflectTypeOf(val interface{}) reflect.Type {
-	// Get a reflect.Type wrapper
-	var valType reflect.Type
-	if theType, ok := val.(reflect.Type); ok {
-		valType = theType
-	} else if theVal, ok := val.(reflect.Value); ok {
-		valType = theVal.Type()
-	} else {
-		valType = reflect.TypeOf(val)
-	}
-
-	return valType
-}
-
-// GetReflectKindOrTypeValueOf returns either a reflect.Kind or a reflect.Type that repesents
-// a zero indirect version of the type provided.
-// Passing reflect.Struct returns (reflect.Struct, nil)
-// Passing string, *string, **string returns (reflect.Invalid, reflect.TypeOf(string))
-func GetReflectKindOrTypeValueOf(val interface{}) (reflect.Kind, reflect.Type) {
-	if kind, ok := val.(reflect.Kind); ok {
-		return kind, nil
-	}
-	typ := GetReflectTypeOf(val)
-
-	// Deref the given type up to two times if neccessary to get actual type
-	if typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-	}
-	if typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-	}
-	if typ.Kind() == reflect.Ptr {
-		panic(fmt.Errorf("Too much indirection in type %s", typ))
-	}
-
-	return reflect.Invalid, typ
-}
-
-type Indirection uint
-
-const (
-	Value Indirection = iota
-	Ptr
-	PtrToPtr
-)
-
-var (
-	indirectionToString = map[Indirection]string{
-		Value:    "Value",
-		Ptr:      "Ptr",
-		PtrToPtr: "PtrToPtr",
-	}
-)
-
-// String returns Indirection as a string
-func (i Indirection) String() string {
-	return indirectionToString[i]
-}
-
 // TypeMatch describes a single match by any one of multiple kinds and/or types
 type TypeMatch struct {
 	types          []reflect.Type
 	kinds          []reflect.Kind
-	minIndirection Indirection
-	maxIndirection Indirection
+	minIndirection int
+	maxIndirection int
 }
 
 // String returns a signature for the types matched, use vertical bars to separate multiple choices.
@@ -85,16 +25,16 @@ type TypeMatch struct {
 // "string|slice"
 // "*(string|slice)"
 // "(*|**)(string|slice)"
-func (v TypeMatch) String() string {
+func (tm TypeMatch) String() string {
 	var str strings.Builder
 
 	// Add pointer indirection(s)
-	var numIndirections Indirection = 0
-	if v.maxIndirection > 0 {
-		numIndirections = v.maxIndirection - v.minIndirection + 1
+	var numIndirections int
+	if tm.maxIndirection > 0 {
+		numIndirections = tm.maxIndirection - tm.minIndirection + 1
 	}
 	multipleIndirections := numIndirections > 1
-	useBrackets := v.minIndirection == 0
+	useBrackets := tm.minIndirection == 0
 
 	if multipleIndirections {
 		if useBrackets {
@@ -104,7 +44,7 @@ func (v TypeMatch) String() string {
 		}
 	}
 
-	for i := 1; i <= int(v.maxIndirection); i++ {
+	for i := 1; i <= int(tm.maxIndirection); i++ {
 		if i > 1 {
 			str.WriteRune('|')
 		}
@@ -121,13 +61,13 @@ func (v TypeMatch) String() string {
 	}
 
 	// Add type(s), then kind(s)
-	needTypeParens := (numIndirections > 1) && ((len(v.types) + len(v.kinds)) > 1)
+	needTypeParens := (numIndirections > 1) && ((len(tm.types) + len(tm.kinds)) > 1)
 	if needTypeParens {
 		str.WriteRune('(')
 	}
 
 	firstType := true
-	for _, typ := range v.types {
+	for _, typ := range tm.types {
 		if !firstType {
 			str.WriteRune('|')
 		}
@@ -136,7 +76,7 @@ func (v TypeMatch) String() string {
 		str.WriteString(typ.String())
 	}
 
-	for _, kind := range v.kinds {
+	for _, kind := range tm.kinds {
 		if !firstType {
 			str.WriteRune('|')
 		}
@@ -161,7 +101,7 @@ func (v TypeMatch) String() string {
 // - 1 int:  minIndirection = maxIndirection = int
 // - 2 ints: minIndirection = first int, maxIndirection = second int
 // Panics if maxIndirection < minIndirection
-func NewTypeMatch(val interface{}, indirection ...Indirection) TypeMatch {
+func NewTypeMatch(val interface{}, indirection ...int) TypeMatch {
 	var kinds []reflect.Kind
 	var types []reflect.Type
 
@@ -183,7 +123,7 @@ func NewTypeMatch(val interface{}, indirection ...Indirection) TypeMatch {
 	}
 
 	if maxIndirection < minIndirection {
-		panic(fmt.Errorf("NewTypeMatch: maxIndirection %s < minIndirection %s", maxIndirection, minIndirection))
+		panic(fmt.Errorf("NewTypeMatch: maxIndirection %d < minIndirection %d", maxIndirection, minIndirection))
 	}
 
 	return TypeMatch{
@@ -197,8 +137,8 @@ func NewTypeMatch(val interface{}, indirection ...Indirection) TypeMatch {
 // NewMultiTypeMatch constructs a TypeMatch that can match against any of several choices.
 // Each choice is the same as for NewTypeMatch.
 func NewMultiTypeMatch(
-	minIndirection Indirection,
-	maxIndirection Indirection,
+	minIndirection int,
+	maxIndirection int,
 	vals ...interface{},
 ) TypeMatch {
 	var types []reflect.Type
@@ -282,18 +222,19 @@ func (tm TypeMatch) Kinds() []reflect.Kind {
 }
 
 // MinIndirection is the minIndirection accessor
-func (tm TypeMatch) MinIndirection() Indirection {
+func (tm TypeMatch) MinIndirection() int {
 	return tm.minIndirection
 }
 
 // MaxIndirection is the maxIndirection accessor
-func (tm TypeMatch) MaxIndirection() Indirection {
+func (tm TypeMatch) MaxIndirection() int {
 	return tm.maxIndirection
 }
 
 // Optionality describes whether a type is required or optional
 type Optionality bool
 
+// Optionality constants
 const (
 	Required Optionality = true
 	Optional Optionality = false
@@ -318,9 +259,9 @@ type FuncTypeMatch struct {
 }
 
 // String returns type signature, with [] around it if it is optional
-func (f FuncTypeMatch) String() string {
-	typeString := f.typeMatch.String()
-	if f.required {
+func (ftm FuncTypeMatch) String() string {
+	typeString := ftm.typeMatch.String()
+	if ftm.required {
 		return typeString
 	}
 
@@ -329,7 +270,7 @@ func (f FuncTypeMatch) String() string {
 
 // NewFuncTypeMatch constructs a FuncTypeMatch
 // See NewTypeMatch
-func NewFuncTypeMatch(val interface{}, required Optionality, indirection ...Indirection) FuncTypeMatch {
+func NewFuncTypeMatch(val interface{}, required Optionality, indirection ...int) FuncTypeMatch {
 	return FuncTypeMatch{
 		typeMatch: NewTypeMatch(val, indirection...),
 		required:  required,
@@ -339,8 +280,8 @@ func NewFuncTypeMatch(val interface{}, required Optionality, indirection ...Indi
 // NewFuncMultiTypeMatch constructs a FuncTypeMatch
 // See NewMultiTypeMatch
 func NewFuncMultiTypeMatch(
-	minIndirection Indirection,
-	maxIndirection Indirection,
+	minIndirection int,
+	maxIndirection int,
 	required Optionality,
 	vals ...interface{},
 ) FuncTypeMatch {
@@ -367,12 +308,12 @@ type FuncMatcher struct {
 }
 
 // String returns signature of matching functions
-func (m FuncMatcher) String() string {
+func (fm FuncMatcher) String() string {
 	var bldr strings.Builder
 
 	bldr.WriteString("func(")
 	first := true
-	for _, pt := range m.paramTypes {
+	for _, pt := range fm.paramTypes {
 		if !first {
 			bldr.WriteString(", ")
 		}
@@ -382,15 +323,15 @@ func (m FuncMatcher) String() string {
 	}
 	bldr.WriteRune(')')
 
-	if len(m.returnTypes) > 0 {
+	if len(fm.returnTypes) > 0 {
 		bldr.WriteRune(' ')
-		multiTypes := len(m.returnTypes) > 1
+		multiTypes := len(fm.returnTypes) > 1
 		if multiTypes {
 			bldr.WriteRune('(')
 		}
 
 		first = true
-		for _, rt := range m.returnTypes {
+		for _, rt := range fm.returnTypes {
 			if !first {
 				bldr.WriteString(", ")
 			}
@@ -413,103 +354,103 @@ func NewFuncMatcher() *FuncMatcher {
 }
 
 // WithParamType builder adds the given param type
-func (f *FuncMatcher) WithParamType(val interface{}, indirection ...Indirection) *FuncMatcher {
-	f.paramTypes = append(f.paramTypes, NewFuncTypeMatch(val, Required, indirection...))
-	return f
+func (fm *FuncMatcher) WithParamType(val interface{}, indirection ...int) *FuncMatcher {
+	fm.paramTypes = append(fm.paramTypes, NewFuncTypeMatch(val, Required, indirection...))
+	return fm
 }
 
 // WithOptionalParamType builder adds the given param type
-func (f *FuncMatcher) WithOptionalParamType(val interface{}, indirection ...Indirection) *FuncMatcher {
-	f.paramTypes = append(f.paramTypes, NewFuncTypeMatch(val, Optional, indirection...))
-	return f
+func (fm *FuncMatcher) WithOptionalParamType(val interface{}, indirection ...int) *FuncMatcher {
+	fm.paramTypes = append(fm.paramTypes, NewFuncTypeMatch(val, Optional, indirection...))
+	return fm
 }
 
 // WithParamOfTypes builder adds a single param that be any one of multiple types
-func (f *FuncMatcher) WithParamOfTypes(
-	minIndirection Indirection,
-	maxIndirection Indirection,
+func (fm *FuncMatcher) WithParamOfTypes(
+	minIndirection int,
+	maxIndirection int,
 	vals ...interface{},
 ) *FuncMatcher {
-	f.paramTypes = append(
-		f.paramTypes,
+	fm.paramTypes = append(
+		fm.paramTypes,
 		NewFuncMultiTypeMatch(minIndirection, maxIndirection, Required, vals...),
 	)
 
-	return f
+	return fm
 }
 
 // WithOptionalParamOfTypes builder adds a single optional param that be any one of multiple types
-func (f *FuncMatcher) WithOptionalParamOfTypes(
-	minIndirection Indirection,
-	maxIndirection Indirection,
+func (fm *FuncMatcher) WithOptionalParamOfTypes(
+	minIndirection int,
+	maxIndirection int,
 	vals ...interface{},
 ) *FuncMatcher {
-	f.paramTypes = append(
-		f.paramTypes,
+	fm.paramTypes = append(
+		fm.paramTypes,
 		NewFuncMultiTypeMatch(minIndirection, maxIndirection, Optional, vals...),
 	)
 
-	return f
+	return fm
 }
 
 // WithParams builder adds the given FuncTypeMatch objects to the parameters
-func (f *FuncMatcher) WithParams(
+func (fm *FuncMatcher) WithParams(
 	funcTypeMatches ...FuncTypeMatch,
 ) *FuncMatcher {
-	f.paramTypes = append(f.paramTypes, funcTypeMatches...)
+	fm.paramTypes = append(fm.paramTypes, funcTypeMatches...)
 
-	return f
+	return fm
 }
 
 // WithReturnType builder adds the given return type
-func (f *FuncMatcher) WithReturnType(val interface{}, indirection ...Indirection) *FuncMatcher {
-	f.returnTypes = append(f.returnTypes, NewFuncTypeMatch(val, Required, indirection...))
-	return f
+func (fm *FuncMatcher) WithReturnType(val interface{}, indirection ...int) *FuncMatcher {
+	fm.returnTypes = append(fm.returnTypes, NewFuncTypeMatch(val, Required, indirection...))
+	return fm
 }
 
 // WithOptionalReturnType builder adds the given return type
-func (f *FuncMatcher) WithOptionalReturnType(val interface{}, indirection ...Indirection) *FuncMatcher {
-	f.returnTypes = append(f.returnTypes, NewFuncTypeMatch(val, Optional, indirection...))
-	return f
+func (fm *FuncMatcher) WithOptionalReturnType(val interface{}, indirection ...int) *FuncMatcher {
+	fm.returnTypes = append(fm.returnTypes, NewFuncTypeMatch(val, Optional, indirection...))
+	return fm
 }
 
 // WithReturnOfTypes builder adds a single return that be any one of multiple types
-func (f *FuncMatcher) WithReturnOfTypes(
-	minIndirection Indirection,
-	maxIndirection Indirection,
+func (fm *FuncMatcher) WithReturnOfTypes(
+	minIndirection int,
+	maxIndirection int,
 	vals ...interface{},
 ) *FuncMatcher {
-	f.returnTypes = append(
-		f.returnTypes,
+	fm.returnTypes = append(
+		fm.returnTypes,
 		NewFuncMultiTypeMatch(minIndirection, maxIndirection, Required, vals...),
 	)
 
-	return f
+	return fm
 }
 
 // WithOptionalReturnOfTypes builder adds a single optional return that be any one of multiple types
-func (f *FuncMatcher) WithOptionalReturnOfTypes(
-	minIndirection Indirection,
-	maxIndirection Indirection,
+func (fm *FuncMatcher) WithOptionalReturnOfTypes(
+	minIndirection int,
+	maxIndirection int,
 	vals ...interface{},
 ) *FuncMatcher {
-	f.returnTypes = append(
-		f.returnTypes,
+	fm.returnTypes = append(
+		fm.returnTypes,
 		NewFuncMultiTypeMatch(minIndirection, maxIndirection, Optional, vals...),
 	)
 
-	return f
+	return fm
 }
 
 // WithReturns builder adds the given FuncTypeMatch objects to the returns
-func (f *FuncMatcher) WithReturns(
+func (fm *FuncMatcher) WithReturns(
 	funcTypeMatch FuncTypeMatch,
 	funcTypeMatches ...FuncTypeMatch,
 ) *FuncMatcher {
-	f.returnTypes = append(f.returnTypes, funcTypeMatch)
-	f.returnTypes = append(f.returnTypes, funcTypeMatches...)
+	fm.returnTypes = append(fm.returnTypes, funcTypeMatch)
+	fm.returnTypes = append(fm.returnTypes, funcTypeMatches...)
 
-	return f
+	return fm
 }
 
 // MatchingTypes returns a set of matched param types, a set of matche returned types,
@@ -523,11 +464,11 @@ func (f *FuncMatcher) WithReturns(
 // optional types indexs that were not matched will be mapped to nil.
 // Note that if a matching func has no parameters and/or return types, the related index map(s) will be zero length.
 // By constrast, if the func does not match, both index maps will be nil.
-func (f FuncMatcher) MatchingTypes(fn interface{}) (map[int]reflect.Type, map[int]reflect.Type, bool) {
+func (fm FuncMatcher) MatchingTypes(fn interface{}) (map[int]reflect.Type, map[int]reflect.Type, bool) {
 	var (
-		paramTypes       = map[int]reflect.Type{}
-		returnTypes      = map[int]reflect.Type{}
-		matches     bool = true
+		paramTypes  = map[int]reflect.Type{}
+		returnTypes = map[int]reflect.Type{}
+		matches     = true
 	)
 
 	// Get a reflect.Type wrapper for fn
@@ -546,13 +487,13 @@ func (f FuncMatcher) MatchingTypes(fn interface{}) (map[int]reflect.Type, map[in
 		fnParamIndex int
 	)
 	// If we have no param types to match, then the func must accept no params
-	if len(f.paramTypes) == 0 {
+	if len(fm.paramTypes) == 0 {
 		if numParams != 0 {
 			return nil, nil, false
 		}
 	} else {
 		// See if our params match that of the function
-		for paramIndex, paramType = range f.paramTypes {
+		for paramIndex, paramType = range fm.paramTypes {
 			// Advance to next loop if we have a matching param
 			if fnParamIndex < numParams {
 				actualParamType := fnType.In(fnParamIndex)
@@ -583,13 +524,13 @@ func (f FuncMatcher) MatchingTypes(fn interface{}) (map[int]reflect.Type, map[in
 		fnReturnIndex int
 	)
 	// If we have no return types to match, then the func must return no values
-	if len(f.returnTypes) == 0 {
+	if len(fm.returnTypes) == 0 {
 		if numReturns != 0 {
 			return nil, nil, false
 		}
 	} else {
 		// See if our returns match that of the function
-		for returnIndex, returnType = range f.returnTypes {
+		for returnIndex, returnType = range fm.returnTypes {
 			// Advance to next loop if we have a matching return
 			if fnReturnIndex < numReturns {
 				actualReturnType := fnType.Out(fnReturnIndex)
@@ -616,13 +557,13 @@ func (f FuncMatcher) MatchingTypes(fn interface{}) (map[int]reflect.Type, map[in
 }
 
 // MatchingIndexes is like MatchingTypes, but returns true or false for matching indexes rather than type or nil.
-func (f FuncMatcher) MatchingIndexes(fn interface{}) (map[int]bool, map[int]bool, bool) {
+func (fm FuncMatcher) MatchingIndexes(fn interface{}) (map[int]bool, map[int]bool, bool) {
 	// Leverage MatchingTypes
 	var (
 		paramIndexes  = map[int]bool{}
 		returnIndexes = map[int]bool{}
 	)
-	paramTypes, returnTypes, matches := f.MatchingTypes(fn)
+	paramTypes, returnTypes, matches := fm.MatchingTypes(fn)
 
 	// Convert return results
 	if matches {
@@ -645,22 +586,22 @@ func (f FuncMatcher) MatchingIndexes(fn interface{}) (map[int]bool, map[int]bool
 }
 
 // Matches simply calls MatchingTypes and returns only the bool result, for simple yes/no matching
-func (f FuncMatcher) Matches(fn interface{}) bool {
-	_, _, matches := f.MatchingTypes(fn)
+func (fm FuncMatcher) Matches(fn interface{}) bool {
+	_, _, matches := fm.MatchingTypes(fn)
 
 	return matches
 }
 
 // ParamTypes is the paramTypes accessor
-func (f FuncMatcher) ParamTypes() []FuncTypeMatch {
-	paramTypesCopy := make([]FuncTypeMatch, len(f.paramTypes))
-	copy(paramTypesCopy, f.paramTypes)
+func (fm FuncMatcher) ParamTypes() []FuncTypeMatch {
+	paramTypesCopy := make([]FuncTypeMatch, len(fm.paramTypes))
+	copy(paramTypesCopy, fm.paramTypes)
 	return paramTypesCopy
 }
 
 // ReturnTypes is the returnTypes accessor
-func (f FuncMatcher) ReturnTypes() []FuncTypeMatch {
-	returnTypesCopy := make([]FuncTypeMatch, len(f.returnTypes))
-	copy(returnTypesCopy, f.returnTypes)
+func (fm FuncMatcher) ReturnTypes() []FuncTypeMatch {
+	returnTypesCopy := make([]FuncTypeMatch, len(fm.returnTypes))
+	copy(returnTypesCopy, fm.returnTypes)
 	return returnTypesCopy
 }
