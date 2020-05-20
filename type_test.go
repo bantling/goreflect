@@ -13,64 +13,80 @@ func TestGetReflectTypeOf(t *testing.T) {
 	assert.Equal(t, reflect.TypeOf(0), GetReflectTypeOf(reflect.TypeOf(0)))
 }
 
-func TestGetReflectKindOrTypeValueOf(t *testing.T) {
+func TestGetReflectTypeOrKindValueOf(t *testing.T) {
 	var (
-		kind    reflect.Kind
 		typ     reflect.Type
+		kind    reflect.Kind
 		strType = reflect.TypeOf((*string)(nil)).Elem()
 	)
 
 	// string kind
 
-	kind, typ = GetReflectKindOrTypeValueOf(reflect.String)
-	assert.Equal(t, reflect.String, kind)
+	typ, kind = GetReflectTypeOrKindValueOf(reflect.String)
 	assert.Nil(t, typ)
+	assert.Equal(t, reflect.String, kind)
 
 	// string instance, value, type
 
 	str := ""
 
-	kind, typ = GetReflectKindOrTypeValueOf(str)
-	assert.Equal(t, reflect.Invalid, kind)
+	typ, kind = GetReflectTypeOrKindValueOf(str)
 	assert.Equal(t, strType, typ)
+	assert.Equal(t, reflect.Invalid, kind)
 
-	kind, typ = GetReflectKindOrTypeValueOf(reflect.ValueOf(str))
-	assert.Equal(t, reflect.Invalid, kind)
+	typ, kind = GetReflectTypeOrKindValueOf(reflect.ValueOf(str))
 	assert.Equal(t, strType, typ)
+	assert.Equal(t, reflect.Invalid, kind)
 
-	kind, typ = GetReflectKindOrTypeValueOf(reflect.TypeOf(str))
-	assert.Equal(t, reflect.Invalid, kind)
+	typ, kind = GetReflectTypeOrKindValueOf(reflect.TypeOf(str))
 	assert.Equal(t, strType, typ)
+	assert.Equal(t, reflect.Invalid, kind)
 
 	// *string instance, value, type
 
 	pstr := &str
 
-	kind, typ = GetReflectKindOrTypeValueOf(pstr)
-	assert.Equal(t, reflect.Invalid, kind)
+	typ, kind = GetReflectTypeOrKindValueOf(pstr)
 	assert.Equal(t, strType, typ)
+	assert.Equal(t, reflect.Invalid, kind)
 
-	kind, typ = GetReflectKindOrTypeValueOf(reflect.ValueOf(pstr))
-	assert.Equal(t, reflect.Invalid, kind)
+	typ, kind = GetReflectTypeOrKindValueOf(reflect.ValueOf(pstr))
 	assert.Equal(t, strType, typ)
+	assert.Equal(t, reflect.Invalid, kind)
 
-	kind, typ = GetReflectKindOrTypeValueOf(reflect.TypeOf(pstr))
-	assert.Equal(t, reflect.Invalid, kind)
+	typ, kind = GetReflectTypeOrKindValueOf(reflect.TypeOf(pstr))
 	assert.Equal(t, strType, typ)
+	assert.Equal(t, reflect.Invalid, kind)
 
 	// **string instance, value, type
 
 	ppstr := &pstr
 
-	kind, typ = GetReflectKindOrTypeValueOf(ppstr)
-	assert.Equal(t, reflect.Invalid, kind)
+	typ, kind = GetReflectTypeOrKindValueOf(ppstr)
 	assert.Equal(t, strType, typ)
+	assert.Equal(t, reflect.Invalid, kind)
 
-	kind, typ = GetReflectKindOrTypeValueOf(reflect.ValueOf(ppstr))
-	assert.Equal(t, reflect.Invalid, kind)
+	typ, kind = GetReflectTypeOrKindValueOf(reflect.ValueOf(ppstr))
 	assert.Equal(t, strType, typ)
+	assert.Equal(t, reflect.Invalid, kind)
 
-	kind, typ = GetReflectKindOrTypeValueOf(reflect.TypeOf(ppstr))
-	assert.Equal(t, reflect.Invalid, kind)
+	typ, kind = GetReflectTypeOrKindValueOf(reflect.TypeOf(ppstr))
 	assert.Equal(t, strType, typ)
+	assert.Equal(t, reflect.Invalid, kind)
+
+	// ***string instance, value, type
+
+	pppstr := &ppstr
+
+	typ, kind = GetReflectTypeOrKindValueOf(pppstr)
+	assert.Equal(t, strType, typ)
+	assert.Equal(t, reflect.Invalid, kind)
+
+	typ, kind = GetReflectTypeOrKindValueOf(reflect.ValueOf(pppstr))
+	assert.Equal(t, strType, typ)
+	assert.Equal(t, reflect.Invalid, kind)
+
+	typ, kind = GetReflectTypeOrKindValueOf(reflect.TypeOf(pppstr))
+	assert.Equal(t, strType, typ)
+	assert.Equal(t, reflect.Invalid, kind)
 }

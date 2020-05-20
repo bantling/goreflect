@@ -1,7 +1,6 @@
 package goreflect
 
 import (
-	"fmt"
 	"reflect"
 )
 
@@ -20,10 +19,9 @@ func GetReflectTypeOf(val interface{}) reflect.Type {
 	return valType
 }
 
-// GetReflectKindOrTypeValueOf returns either a reflect.Kind or a reflect.Type that repesents
+// GetReflectTypeOrKindValueOf returns either a reflect.Type or a reflect.Kind that represents
 // a zero indirect version of the value or type provided.
-// Passing reflect.String returns (reflect.String, nil)
-// Passing ay of the following returns (reflect.Invalid, reflect.TypeOf(string)):
+// Passing any of the following returns (reflect.TypeOf(string), reflect.Invalid):
 // - "str"
 // - &"str"
 // - &&"str"
@@ -33,22 +31,12 @@ func GetReflectTypeOf(val interface{}) reflect.Type {
 // - reflect.TypeOf("")
 // - reflect.TypeOf(&"")
 // - reflect.TypeOf(&&"")
-func GetReflectKindOrTypeValueOf(val interface{}) (reflect.Kind, reflect.Type) {
+// Passing reflect.String returns (nil, reflect.String)
+func GetReflectTypeOrKindValueOf(val interface{}) (reflect.Type, reflect.Kind) {
 	if kind, ok := val.(reflect.Kind); ok {
-		return kind, nil
-	}
-	typ := GetReflectTypeOf(val)
-
-	// Deref the given type up to two times if neccessary to get actual type
-	if typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-	}
-	if typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-	}
-	if typ.Kind() == reflect.Ptr {
-		panic(fmt.Errorf("Too much indirection in type %s", typ))
+		return nil, kind
 	}
 
-	return reflect.Invalid, typ
+	// Deref the given type to get actual type
+	return DerefdReflectType(GetReflectTypeOf(val)), reflect.Invalid
 }

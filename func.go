@@ -93,23 +93,21 @@ func (tm TypeMatch) String() string {
 }
 
 // NewTypeMatch constructs a TypeMatch
-// The value passed can be a value, a reflect.Value that wraps a value,
-// a reflect.Type that wraps a value type, or a reflect.Kind.
-// If the value is not a reflect.Kind, then it cannot have more than two levels of pointer indirection.
+// The value passed can be a value, reflect.Value, reflect.Type, or reflect.Kind.
 // Indirection may have up two ints, as follows:
 // - 0 ints: minIndirection = maxIndirection = 0
 // - 1 int:  minIndirection = maxIndirection = int
 // - 2 ints: minIndirection = first int, maxIndirection = second int
 // Panics if maxIndirection < minIndirection
 func NewTypeMatch(val interface{}, indirection ...int) TypeMatch {
-	var kinds []reflect.Kind
 	var types []reflect.Type
+	var kinds []reflect.Kind
 
-	kind, typ := GetReflectKindOrTypeValueOf(val)
-	if kind != reflect.Invalid {
-		kinds = []reflect.Kind{kind}
-	} else {
+	typ, kind := GetReflectTypeOrKindValueOf(val)
+	if kind == reflect.Invalid {
 		types = []reflect.Type{typ}
+	} else {
+		kinds = []reflect.Kind{kind}
 	}
 
 	minIndirection := Value
@@ -145,17 +143,17 @@ func NewMultiTypeMatch(
 	var kinds []reflect.Kind
 
 	for _, val := range vals {
-		kind, typ := GetReflectKindOrTypeValueOf(val)
-		if kind != reflect.Invalid {
-			kinds = append(kinds, kind)
-		} else {
+		typ, kind := GetReflectTypeOrKindValueOf(val)
+		if kind == reflect.Invalid {
 			types = append(types, typ)
+		} else {
+			kinds = append(kinds, kind)
 		}
 	}
 
 	return TypeMatch{
-		kinds:          kinds,
 		types:          types,
+		kinds:          kinds,
 		minIndirection: minIndirection,
 		maxIndirection: maxIndirection,
 	}
@@ -169,37 +167,25 @@ func (tm TypeMatch) Matches(t reflect.Type) bool {
 	}
 
 	// Get the given type as a zero indirection value type, counting indirections
-	valueType := t
-	indirection := Value
-
-	if valueType.Kind() == reflect.Ptr {
-		valueType = valueType.Elem()
-		indirection++
-	}
-	if valueType.Kind() == reflect.Ptr {
-		valueType = valueType.Elem()
-		indirection++
-	}
-	if valueType.Kind() == reflect.Ptr {
-		return false
-	}
+	valueType := DerefdReflectType(t)
+	indirection := NumRefs(t)
 
 	// Check indirection levels first
 	if (indirection < tm.minIndirection) || (indirection > tm.maxIndirection) {
 		return false
 	}
 
-	// Check if any kind matches the zero indirection value kind
-	valueKind := valueType.Kind()
-	for _, kind := range tm.kinds {
-		if kind == valueKind {
+	// Check if any type matches the zero indirection value type
+	for _, typ := range tm.types {
+		if typ == valueType {
 			return true
 		}
 	}
 
-	// Check if any type matches the zero indirection value type
-	for _, typ := range tm.types {
-		if typ == valueType {
+	// Check if any kind matches the zero indirection value kind
+	valueKind := valueType.Kind()
+	for _, kind := range tm.kinds {
+		if kind == valueKind {
 			return true
 		}
 	}

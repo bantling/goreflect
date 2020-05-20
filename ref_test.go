@@ -66,13 +66,13 @@ func TestNumRefs(t *testing.T) {
 	i := 1
 	ptr := &i
 	ptrptr := &ptr
-	assert.Equal(t, 0, NumRefs(reflect.TypeOf(i)))
-	assert.Equal(t, 1, NumRefs(reflect.TypeOf(ptr)))
-	assert.Equal(t, 2, NumRefs(reflect.TypeOf(ptrptr)))
+	assert.Equal(t, Value, NumRefs(reflect.TypeOf(i)))
+	assert.Equal(t, Ptr, NumRefs(reflect.TypeOf(ptr)))
+	assert.Equal(t, PtrPtr, NumRefs(reflect.TypeOf(ptrptr)))
 }
 
 func TestCreateRefs(t *testing.T) {
-	assert.Equal(t, 10, CreateRefs(reflect.ValueOf(10), 0).Interface())
-	assert.Equal(t, 11, CreateRefs(reflect.ValueOf(11), 1).Elem().Interface())
-	assert.Equal(t, 12, CreateRefs(reflect.ValueOf(12), 2).Elem().Elem().Interface())
+	assert.Equal(t, 10, CreateRefs(reflect.ValueOf(10), Value).Interface())
+	assert.Equal(t, 11, CreateRefs(reflect.ValueOf(11), Ptr).Elem().Interface())
+	assert.Equal(t, 12, CreateRefs(reflect.ValueOf(12), PtrPtr).Elem().Elem().Interface())
 }
