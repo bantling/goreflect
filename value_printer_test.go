@@ -30,8 +30,8 @@ func TestValuePrinter(t *testing.T) {
 		}
 
 		ptrptr = &ptr
-		arrarr = [2][3]int{[3]int{11, 12, 13}, [3]int{14, 15, 16}}
-		slsl   = [][]int{[]int{17, 18, 19}, []int{20, 21, 22}}
+		arrarr = [2][3]int{{11, 12, 13}, {14, 15, 16}}
+		slsl   = [][]int{{17, 18, 19}, {20, 21, 22}}
 	)
 
 	// Plain bool

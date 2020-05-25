@@ -11,7 +11,7 @@ import (
 // Prints out values similar to fmt.Sprintf("%+v"), with some exceptions:
 // - strings are optionally double quoted
 // - chan and func values are printed as their type
-// If desired, the address can also be printed for chan and func values.
+// If desired, the address can also be printed for chan, func, ptr, slice, and map values.
 // The zero value is ready to use, and will not quote strings or print addresses.
 type ValueScalarPrinter struct {
 	bldr         *strings.Builder

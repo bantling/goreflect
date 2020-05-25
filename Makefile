@@ -40,7 +40,7 @@ lint:
 
 .PHONY: format
 format:
-	go fmt ./...
+	gofmt -s -w $$(go list -f '{{.GoFiles}} {{.TestGoFiles}}' | tr -d '[]')
 
 .PHONY: test
 test:
