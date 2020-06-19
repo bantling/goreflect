@@ -64,12 +64,13 @@ const (
 )
 
 // ValueCoalescer coalesces numeric types as follows:
-// All signed integer types may be coalesced into int, int64, uint, uint64 or string
-// All unsigned integer types may be coalesced into int, int64, uint, uint64, or string
-// float32 and float64 may be coaleseced into float32, float64, or string
-// complex64 and complex128 may be coalesced into complex64, complex128, or string
-// Arrays may be coalesced into slices
-// All other types are passed through as is
+// All signed integer types may be coalesced into int, int64, uint, uint64 or string.
+// All unsigned integer types may be coalesced into int, int64, uint, uint64, or string.
+// float32 and float64 may be coaleseced into float32, float64, or string.
+// complex64 and complex128 may be coalesced into complex64, complex128, or string.
+// Arrays may be coalesced into slices.
+// All other types are passed through as is.
+// A wrapped visitor will only visit the coalesced types.
 type ValueCoalescer struct {
 	visitor             ValueVisitor
 	intCoalesceMode     IntCoalesceMode
@@ -358,41 +359,41 @@ func (c ValueCoalescer) VisitComplex128(val complex128) {
 }
 
 // VisitPreArray coalesces an array
-func (c ValueCoalescer) VisitPreArray(len int, val reflect.Value) {
+func (c ValueCoalescer) VisitPreArray(length int, val reflect.Value) {
 	switch c.arrayCoalesceMode {
 	case ArraysToSlice:
-		c.visitor.VisitPreSlice(len, val)
+		c.visitor.VisitPreSlice(length, val)
 	case ArraysAsIs:
-		c.visitor.VisitPreArray(len, val)
+		c.visitor.VisitPreArray(length, val)
 	}
 }
 
 // VisitPreArrayIndex coalesces a value of a array
-func (c ValueCoalescer) VisitPreArrayIndex(len int, idx int, val reflect.Value) {
+func (c ValueCoalescer) VisitPreArrayIndex(length int, idx int, val reflect.Value) {
 	switch c.arrayCoalesceMode {
 	case ArraysToSlice:
-		c.visitor.VisitPreSliceIndex(len, idx, val)
+		c.visitor.VisitPreSliceIndex(length, idx, val)
 	case ArraysAsIs:
-		c.visitor.VisitPreArrayIndex(len, idx, val)
+		c.visitor.VisitPreArrayIndex(length, idx, val)
 	}
 }
 
 // VisitPostArrayIndex coalesces a value of a array
-func (c ValueCoalescer) VisitPostArrayIndex(len int, idx int, val reflect.Value) {
+func (c ValueCoalescer) VisitPostArrayIndex(length int, idx int, val reflect.Value) {
 	switch c.arrayCoalesceMode {
 	case ArraysToSlice:
-		c.visitor.VisitPostSliceIndex(len, idx, val)
+		c.visitor.VisitPostSliceIndex(length, idx, val)
 	case ArraysAsIs:
-		c.visitor.VisitPostArrayIndex(len, idx, val)
+		c.visitor.VisitPostArrayIndex(length, idx, val)
 	}
 }
 
 // VisitPostArray coalesces an array
-func (c ValueCoalescer) VisitPostArray(len int, val reflect.Value) {
+func (c ValueCoalescer) VisitPostArray(length int, val reflect.Value) {
 	switch c.arrayCoalesceMode {
 	case ArraysToSlice:
-		c.visitor.VisitPostSlice(len, val)
+		c.visitor.VisitPostSlice(length, val)
 	case ArraysAsIs:
-		c.visitor.VisitPostArray(len, val)
+		c.visitor.VisitPostArray(length, val)
 	}
 }

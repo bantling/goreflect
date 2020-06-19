@@ -12,7 +12,7 @@ func TestValueCoalescer(t *testing.T) {
 	var (
 		methodNames []string
 		methodArgs  [][]interface{}
-		d           = NewValueVisitorReducer(func(m string, a []reflect.Value) {
+		d           = NewValueVisitorProxy(func(m string, a []reflect.Value) {
 			methodNames = append(methodNames, m)
 			var args []interface{}
 			for _, arg := range a {

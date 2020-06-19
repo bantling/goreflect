@@ -6,7 +6,7 @@ import (
 )
 
 // ValueDepthFirstWalker visits a value in a depth first traversal.
-// A walk begins with the Walk method, which accepts a value to walk and a ValueVisitor to call on each part of the value.
+// A walk begins with the Walk method, which accepts a value to walk.
 // A walker instance is reuseable, it can be called many times wth different values and/or different ValueVisitors.
 //
 // Example call sequence to visit a *map[string]int = &map[string]int{"foo": 1, "bar": 2}:
@@ -32,14 +32,36 @@ import (
 // VisitPostMap(2, map[string]int{"foo": 1, "bar": 2})
 // VisitPostPtr(&map[string]int{"foo": 1, "bar": 2})
 //
-// Note that the map will iterate the key/value pairs in whatever order go.reflect provides.
+// Note that it is not usually desirable to walk the fields of a struct.
+// By default, struct fields are not walked, the WithStructFields method causes the fields to be walked.
 type ValueDepthFirstWalker struct {
-	visitor ValueVisitor
+	visitor          ValueVisitor
+	walkStructFields bool
 }
 
-// NewValueDepthFirstWalker constructs a ValueDepthFirstWalker with a ValueVisitor
-func NewValueDepthFirstWalker(visitor ValueVisitor) ValueDepthFirstWalker {
-	return ValueDepthFirstWalker{visitor: visitor}
+// NewValueDepthFirstWalker constructs a ValueDepthFirstWalker with an optional ValueVisitor
+func NewValueDepthFirstWalker(visitor ...ValueVisitor) ValueDepthFirstWalker {
+	var vis ValueVisitor
+	if len(visitor) > 0 {
+		vis = visitor[0]
+	}
+
+	return ValueDepthFirstWalker{visitor: vis}
+}
+
+// WithVisitor sets the visitor to walk
+func (w *ValueDepthFirstWalker) WithVisitor(visitor ValueVisitor) {
+	w.visitor = visitor
+}
+
+// WithStructFields sets the flag to walk struct fields
+func (w *ValueDepthFirstWalker) WithStructFields() {
+	w.walkStructFields = true
+}
+
+// WithoutStructFields clears the flag to walk struct fields
+func (w *ValueDepthFirstWalker) WithoutStructFields() {
+	w.walkStructFields = false
 }
 
 // Walk walks the given value in a depth-first traversal.
@@ -48,11 +70,11 @@ func NewValueDepthFirstWalker(visitor ValueVisitor) ValueDepthFirstWalker {
 // There is no return result from the walk. Instead, the visitor is expected to have a Result() method that returns the appropriate type.
 func (w ValueDepthFirstWalker) Walk(val interface{}) {
 	w.visitor.Init()
-	w.Dispatch(GetReflectValueOf(val))
+	w.dispatch(GetReflectValueOf(val))
 }
 
 // Dispatch executes the appropriate visitor methods for a value based on the type
-func (w ValueDepthFirstWalker) Dispatch(v reflect.Value) {
+func (w ValueDepthFirstWalker) dispatch(v reflect.Value) {
 	switch v.Kind() {
 	case reflect.Bool:
 		w.visitor.VisitBool(v.Bool())
@@ -110,7 +132,7 @@ func (w ValueDepthFirstWalker) Dispatch(v reflect.Value) {
 
 	case reflect.Ptr:
 		w.visitor.VisitPrePtr(v)
-		w.Dispatch(v.Elem())
+		w.dispatch(v.Elem())
 		w.visitor.VisitPostPtr(v)
 
 	case reflect.Array:
@@ -122,7 +144,7 @@ func (w ValueDepthFirstWalker) Dispatch(v reflect.Value) {
 				e := v.Index(i)
 
 				w.visitor.VisitPreArrayIndex(n, i, e)
-				w.Dispatch(e)
+				w.dispatch(e)
 				w.visitor.VisitPostArrayIndex(n, i, e)
 			}
 
@@ -138,7 +160,7 @@ func (w ValueDepthFirstWalker) Dispatch(v reflect.Value) {
 				e := v.Index(i)
 
 				w.visitor.VisitPreSliceIndex(n, i, e)
-				w.Dispatch(e)
+				w.dispatch(e)
 				w.visitor.VisitPostSliceIndex(n, i, e)
 			}
 
@@ -155,11 +177,11 @@ func (w ValueDepthFirstWalker) Dispatch(v reflect.Value) {
 				w.visitor.VisitPreMapKeyValue(n, i, mk, mv)
 
 				w.visitor.VisitPreMapKey(n, i, mk)
-				w.Dispatch(mk)
+				w.dispatch(mk)
 				w.visitor.VisitPostMapKey(n, i, mk)
 
 				w.visitor.VisitPreMapValue(n, i, mv)
-				w.Dispatch(mv)
+				w.dispatch(mv)
 				w.visitor.VisitPostMapValue(n, i, mv)
 
 				w.visitor.VisitPostMapKeyValue(n, i, mk, mv)
@@ -177,7 +199,7 @@ func (w ValueDepthFirstWalker) Dispatch(v reflect.Value) {
 				sf, sv := v.Type().Field(i), v.Field(i)
 
 				w.visitor.VisitPreStructFieldValue(n, i, sf, sv)
-				w.Dispatch(sv)
+				w.dispatch(sv)
 				w.visitor.VisitPostStructFieldValue(n, i, sf, sv)
 			}
 

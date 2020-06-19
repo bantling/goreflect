@@ -1,6 +1,7 @@
 package goreflect
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -75,4 +76,120 @@ func TestCreateRefs(t *testing.T) {
 	assert.Equal(t, 10, CreateRefs(reflect.ValueOf(10), Value).Interface())
 	assert.Equal(t, 11, CreateRefs(reflect.ValueOf(11), Ptr).Elem().Interface())
 	assert.Equal(t, 12, CreateRefs(reflect.ValueOf(12), PtrPtr).Elem().Elem().Interface())
+}
+
+func TestFullyDerefdValue(t *testing.T) {
+	//// Scalars
+	assert.Equal(t, 1, FullyDerefdValue(1))
+	assert.Equal(t, int8(2), FullyDerefdValue(int8(2)))
+	assert.Equal(t, int16(3), FullyDerefdValue(int16(3)))
+	assert.Equal(t, int32(4), FullyDerefdValue(int32(4)))
+	assert.Equal(t, int64(5), FullyDerefdValue(int64(5)))
+	assert.Equal(t, uint(6), FullyDerefdValue(uint(6)))
+	assert.Equal(t, uint8(7), FullyDerefdValue(uint8(7)))
+	assert.Equal(t, uint16(8), FullyDerefdValue(uint16(8)))
+	assert.Equal(t, uint32(9), FullyDerefdValue(uint32(9)))
+	assert.Equal(t, uint64(10), FullyDerefdValue(uint64(10)))
+	assert.Equal(t, float32(11), FullyDerefdValue(float32(11)))
+	assert.Equal(t, float64(12), FullyDerefdValue(float64(12)))
+	assert.Equal(t, complex64((13 + 14i)), FullyDerefdValue(complex64((13 + 14i))))
+	assert.Equal(t, complex128((15 + 16i)), FullyDerefdValue(complex128((15 + 16i))))
+	assert.Equal(t, "17", FullyDerefdValue("17"))
+
+	c := make(chan int)
+	assert.Equal(t, c, FullyDerefdValue(c))
+
+	f := func() {}
+	assert.Equal(t, fmt.Sprintf("%p", f), fmt.Sprintf("%p", FullyDerefdValue(f)))
+
+	//// Pointer
+	i := 1
+	assert.Equal(t, i, FullyDerefdValue(&i))
+
+	//// Array of scalars
+	assert.Equal(t, [1]int{1}, FullyDerefdValue([1]int{i}))
+	assert.Equal(t, [1]int{1}, FullyDerefdValue(&[1]int{i}))
+	assert.Equal(t, [1]int{1}, FullyDerefdValue([1]*int{&i}))
+	assert.Equal(t, [1]int{1}, FullyDerefdValue(&[1]*int{&i}))
+
+	//// Slice of scalars
+	assert.Equal(t, []int{1}, FullyDerefdValue([]int{i}))
+	assert.Equal(t, []int{1}, FullyDerefdValue(&[]int{i}))
+	assert.Equal(t, []int{1}, FullyDerefdValue([]*int{&i}))
+	assert.Equal(t, []int{1}, FullyDerefdValue(&[]*int{&i}))
+
+	//// Map of scalars
+	str := "1"
+	assert.Equal(t, map[int]string{1: "1"}, FullyDerefdValue(map[int]string{i: str}))
+	assert.Equal(t, map[int]string{1: "1"}, FullyDerefdValue(&map[int]string{i: str}))
+	assert.Equal(t, map[int]string{1: "1"}, FullyDerefdValue(map[*int]string{&i: str}))
+	assert.Equal(t, map[int]string{1: "1"}, FullyDerefdValue(map[int]*string{i: &str}))
+	assert.Equal(t, map[int]string{1: "1"}, FullyDerefdValue(&map[*int]*string{&i: &str}))
+
+	//// Array of array
+	assert.Equal(t, [1][1]int{{1}}, FullyDerefdValue([1][1]int{{i}}))
+	assert.Equal(t, [1][1]int{{1}}, FullyDerefdValue(&[1][1]int{{i}}))
+	assert.Equal(t, [1][1]int{{1}}, FullyDerefdValue([1][1]*int{{&i}}))
+	assert.Equal(t, [1][1]int{{1}}, FullyDerefdValue(&[1]*[1]*int{{&i}}))
+
+	//// Array of slice
+	assert.Equal(t, [1][]int{{1}}, FullyDerefdValue([1][]int{{i}}))
+	assert.Equal(t, [1][]int{{1}}, FullyDerefdValue(&[1][]int{{i}}))
+	assert.Equal(t, [1][]int{{1}}, FullyDerefdValue([1][]*int{{&i}}))
+	assert.Equal(t, [1][]int{{1}}, FullyDerefdValue(&[1]*[]*int{{&i}}))
+
+	//// Array of map
+	assert.Equal(t, [1]map[int]string{{i: str}}, FullyDerefdValue([1]map[int]string{{i: str}}))
+	assert.Equal(t, [1]map[int]string{{i: str}}, FullyDerefdValue(&[1]map[int]string{{i: str}}))
+	assert.Equal(t, [1]map[int]string{{i: str}}, FullyDerefdValue([1]*map[int]string{{i: str}}))
+	assert.Equal(t, [1]map[int]string{{i: str}}, FullyDerefdValue([1]map[*int]string{{&i: str}}))
+	assert.Equal(t, [1]map[int]string{{i: str}}, FullyDerefdValue([1]map[int]*string{{i: &str}}))
+	assert.Equal(t, [1]map[int]string{{i: str}}, FullyDerefdValue(&[1]*map[*int]*string{{&i: &str}}))
+
+	//// Slice of array
+	assert.Equal(t, [][1]int{{1}}, FullyDerefdValue([][1]int{{i}}))
+	assert.Equal(t, [][1]int{{1}}, FullyDerefdValue(&[][1]int{{i}}))
+	assert.Equal(t, [][1]int{{1}}, FullyDerefdValue([][1]*int{{&i}}))
+	assert.Equal(t, [][1]int{{1}}, FullyDerefdValue(&[]*[1]*int{{&i}}))
+
+	//// Slice of slice
+	assert.Equal(t, [][]int{{1}}, FullyDerefdValue([][]int{{i}}))
+	assert.Equal(t, [][]int{{1}}, FullyDerefdValue(&[][]int{{i}}))
+	assert.Equal(t, [][]int{{1}}, FullyDerefdValue([][]*int{{&i}}))
+	assert.Equal(t, [][]int{{1}}, FullyDerefdValue(&[]*[]*int{{&i}}))
+
+	//// Slice of map
+	assert.Equal(t, []map[int]string{{i: str}}, FullyDerefdValue([]map[int]string{{i: str}}))
+	assert.Equal(t, []map[int]string{{i: str}}, FullyDerefdValue(&[]map[int]string{{i: str}}))
+	assert.Equal(t, []map[int]string{{i: str}}, FullyDerefdValue([]*map[int]string{{i: str}}))
+	assert.Equal(t, []map[int]string{{i: str}}, FullyDerefdValue([]map[*int]string{{&i: str}}))
+	assert.Equal(t, []map[int]string{{i: str}}, FullyDerefdValue([]map[int]*string{{i: &str}}))
+	assert.Equal(t, []map[int]string{{i: str}}, FullyDerefdValue(&[]*map[*int]*string{{&i: &str}}))
+
+	//// Map of array
+	j := 2
+	assert.Equal(t, map[int][1]int{1: {2}}, FullyDerefdValue(map[int][1]int{i: {j}}))
+	assert.Equal(t, map[int][1]int{1: {2}}, FullyDerefdValue(&map[int][1]int{i: {j}}))
+	assert.Equal(t, map[int][1]int{1: {2}}, FullyDerefdValue(map[*int][1]int{&i: {j}}))
+	assert.Equal(t, map[int][1]int{1: {2}}, FullyDerefdValue(map[int]*[1]int{i: {j}}))
+	assert.Equal(t, map[int][1]int{1: {2}}, FullyDerefdValue(map[int][1]*int{i: {&j}}))
+	assert.Equal(t, map[int][1]int{1: {2}}, FullyDerefdValue(&map[*int]*[1]*int{&i: {&j}}))
+
+	//// Map of slice
+	assert.Equal(t, map[int][]int{1: {2}}, FullyDerefdValue(map[int][]int{i: {j}}))
+	assert.Equal(t, map[int][]int{1: {2}}, FullyDerefdValue(&map[int][]int{i: {j}}))
+	assert.Equal(t, map[int][]int{1: {2}}, FullyDerefdValue(map[*int][]int{&i: {j}}))
+	assert.Equal(t, map[int][]int{1: {2}}, FullyDerefdValue(map[int]*[]int{i: {j}}))
+	assert.Equal(t, map[int][]int{1: {2}}, FullyDerefdValue(map[int][]*int{i: {&j}}))
+	assert.Equal(t, map[int][]int{1: {2}}, FullyDerefdValue(&map[*int]*[]*int{&i: {&j}}))
+
+	//// Map of map
+	jstr := "2"
+	assert.Equal(t, map[int]map[int]string{1: {2: "2"}}, FullyDerefdValue(map[int]map[int]string{i: {j: jstr}}))
+	assert.Equal(t, map[int]map[int]string{1: {2: "2"}}, FullyDerefdValue(&map[int]map[int]string{i: {j: jstr}}))
+	assert.Equal(t, map[int]map[int]string{1: {2: "2"}}, FullyDerefdValue(map[*int]map[int]string{&i: {j: jstr}}))
+	assert.Equal(t, map[int]map[int]string{1: {2: "2"}}, FullyDerefdValue(map[int]*map[int]string{i: {j: jstr}}))
+	assert.Equal(t, map[int]map[int]string{1: {2: "2"}}, FullyDerefdValue(map[int]map[*int]string{i: {&j: jstr}}))
+	assert.Equal(t, map[int]map[int]string{1: {2: "2"}}, FullyDerefdValue(map[int]map[int]*string{i: {j: &jstr}}))
+	assert.Equal(t, map[int]map[int]string{1: {2: "2"}}, FullyDerefdValue(&map[*int]*map[*int]*string{&i: {&j: &jstr}}))
 }

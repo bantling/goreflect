@@ -111,102 +111,102 @@ type PostPtrVisitor interface {
 
 // PreArrayVisitor previsits array values
 type PreArrayVisitor interface {
-	VisitPreArray(len int, v reflect.Value)
+	VisitPreArray(length int, v reflect.Value)
 }
 
 // PreArrayIndexVisitor previsits array value indexes
 type PreArrayIndexVisitor interface {
-	VisitPreArrayIndex(len int, idx int, v reflect.Value)
+	VisitPreArrayIndex(length int, index int, v reflect.Value)
 }
 
 // PostArrayIndexVisitor postvisits array value indexes
 type PostArrayIndexVisitor interface {
-	VisitPostArrayIndex(len int, idx int, v reflect.Value)
+	VisitPostArrayIndex(length int, index int, v reflect.Value)
 }
 
 // PostArrayVisitor postvisits array values
 type PostArrayVisitor interface {
-	VisitPostArray(len int, v reflect.Value)
+	VisitPostArray(length int, v reflect.Value)
 }
 
 // PreSliceVisitor previsits slice values
 type PreSliceVisitor interface {
-	VisitPreSlice(len int, v reflect.Value)
+	VisitPreSlice(length int, v reflect.Value)
 }
 
 // PreSliceIndexVisitor previsits slice value indexes
 type PreSliceIndexVisitor interface {
-	VisitPreSliceIndex(len int, idx int, v reflect.Value)
+	VisitPreSliceIndex(length int, index int, v reflect.Value)
 }
 
 // PostSliceIndexVisitor prostvisits slice value indexes
 type PostSliceIndexVisitor interface {
-	VisitPostSliceIndex(len int, idx int, v reflect.Value)
+	VisitPostSliceIndex(length int, index int, v reflect.Value)
 }
 
 // PostSliceVisitor postvisits slice values
 type PostSliceVisitor interface {
-	VisitPostSlice(len int, v reflect.Value)
+	VisitPostSlice(length int, v reflect.Value)
 }
 
 // PreMapVisitor previsits map values
 type PreMapVisitor interface {
-	VisitPreMap(len int, m reflect.Value)
+	VisitPreMap(length int, m reflect.Value)
 }
 
 // PreMapKeyValueVisitor previsits map key/value pairs
 type PreMapKeyValueVisitor interface {
-	VisitPreMapKeyValue(len int, idx int, k reflect.Value, v reflect.Value)
+	VisitPreMapKeyValue(length int, index int, k reflect.Value, v reflect.Value)
 }
 
 // PreMapKeyVisitor previsits map keys
 type PreMapKeyVisitor interface {
-	VisitPreMapKey(len int, idx int, k reflect.Value)
+	VisitPreMapKey(length int, index int, k reflect.Value)
 }
 
 // PostMapKeyVisitor postvisits map keys
 type PostMapKeyVisitor interface {
-	VisitPostMapKey(len int, idx int, k reflect.Value)
+	VisitPostMapKey(length int, index int, k reflect.Value)
 }
 
 // PreMapValueVisitor previsits map key values
 type PreMapValueVisitor interface {
-	VisitPreMapValue(len int, idx int, v reflect.Value)
+	VisitPreMapValue(length int, index int, v reflect.Value)
 }
 
 // PostMapValueVisitor postvisits map key values
 type PostMapValueVisitor interface {
-	VisitPostMapValue(len int, idx int, v reflect.Value)
+	VisitPostMapValue(length int, index int, v reflect.Value)
 }
 
 // PostMapKeyValueVisitor postvisits map key/value pairs
 type PostMapKeyValueVisitor interface {
-	VisitPostMapKeyValue(len int, idx int, k reflect.Value, v reflect.Value)
+	VisitPostMapKeyValue(length int, index int, k reflect.Value, v reflect.Value)
 }
 
 // PostMapVisitor postvisits map values
 type PostMapVisitor interface {
-	VisitPostMap(len int, m reflect.Value)
+	VisitPostMap(length int, m reflect.Value)
 }
 
 // PreStructVisitor previsits struct values
 type PreStructVisitor interface {
-	VisitPreStruct(len int, v reflect.Value)
+	VisitPreStruct(length int, v reflect.Value)
 }
 
 // PreStructFieldValueVisitor previsits struct field value pairs
 type PreStructFieldValueVisitor interface {
-	VisitPreStructFieldValue(len int, idx int, f reflect.StructField, v reflect.Value)
+	VisitPreStructFieldValue(length int, index int, f reflect.StructField, v reflect.Value)
 }
 
 // PostStructFieldValueVisitor postvisits struct field value pairs
 type PostStructFieldValueVisitor interface {
-	VisitPostStructFieldValue(len int, idx int, f reflect.StructField, v reflect.Value)
+	VisitPostStructFieldValue(length int, index int, f reflect.StructField, v reflect.Value)
 }
 
 // PostStructVisitor postvisits struct values
 type PostStructVisitor interface {
-	VisitPostStruct(len int, v reflect.Value)
+	VisitPostStruct(length int, v reflect.Value)
 }
 
 // ValueVisitor combines all above interfaces into one

@@ -385,101 +385,101 @@ func (va ValueVisitorAdapter) VisitPostPtr(v reflect.Value) {
 }
 
 // VisitPreArray delegates to composed PreArrayVisitor
-func (va ValueVisitorAdapter) VisitPreArray(len int, v reflect.Value) {
-	va.preArrayVisitor(len, v)
+func (va ValueVisitorAdapter) VisitPreArray(length int, v reflect.Value) {
+	va.preArrayVisitor(length, v)
 }
 
 // VisitPreArrayIndex delegates to composed PreArrayIndexVisitor
-func (va ValueVisitorAdapter) VisitPreArrayIndex(len int, idx int, v reflect.Value) {
-	va.preArrayIndexVisitor(len, idx, v)
+func (va ValueVisitorAdapter) VisitPreArrayIndex(length int, index int, v reflect.Value) {
+	va.preArrayIndexVisitor(length, index, v)
 }
 
 // VisitPostArrayIndex delegates to composed PostArrayIndexVisitor
-func (va ValueVisitorAdapter) VisitPostArrayIndex(len int, idx int, v reflect.Value) {
-	va.postArrayIndexVisitor(len, idx, v)
+func (va ValueVisitorAdapter) VisitPostArrayIndex(length int, index int, v reflect.Value) {
+	va.postArrayIndexVisitor(length, index, v)
 }
 
 // VisitPostArray delegates to composed PostArrayVisitor
-func (va ValueVisitorAdapter) VisitPostArray(len int, v reflect.Value) {
-	va.postArrayVisitor(len, v)
+func (va ValueVisitorAdapter) VisitPostArray(length int, v reflect.Value) {
+	va.postArrayVisitor(length, v)
 }
 
 // VisitPreSlice delegates to composed PreSliceVisitor
-func (va ValueVisitorAdapter) VisitPreSlice(len int, v reflect.Value) {
-	va.preSliceVisitor(len, v)
+func (va ValueVisitorAdapter) VisitPreSlice(length int, v reflect.Value) {
+	va.preSliceVisitor(length, v)
 }
 
 // VisitPreSliceIndex delegates to composed PreSliceIndexVisitor
-func (va ValueVisitorAdapter) VisitPreSliceIndex(len int, idx int, v reflect.Value) {
-	va.preSliceIndexVisitor(len, idx, v)
+func (va ValueVisitorAdapter) VisitPreSliceIndex(length int, index int, v reflect.Value) {
+	va.preSliceIndexVisitor(length, index, v)
 }
 
 // VisitPostSliceIndex delegates to composed PostSliceIndexVisitor
-func (va ValueVisitorAdapter) VisitPostSliceIndex(len int, idx int, v reflect.Value) {
-	va.postSliceIndexVisitor(len, idx, v)
+func (va ValueVisitorAdapter) VisitPostSliceIndex(length int, index int, v reflect.Value) {
+	va.postSliceIndexVisitor(length, index, v)
 }
 
 // VisitPostSlice delegates to composed PostSliceVisitor
-func (va ValueVisitorAdapter) VisitPostSlice(len int, v reflect.Value) {
-	va.postSliceVisitor(len, v)
+func (va ValueVisitorAdapter) VisitPostSlice(length int, v reflect.Value) {
+	va.postSliceVisitor(length, v)
 }
 
 // VisitPreMap delegates to composed PreMapVisitor
-func (va ValueVisitorAdapter) VisitPreMap(len int, m reflect.Value) {
-	va.preMapVisitor(len, m)
+func (va ValueVisitorAdapter) VisitPreMap(length int, m reflect.Value) {
+	va.preMapVisitor(length, m)
 }
 
 // VisitPreMapKeyValue delegates to composed PreMapKeyValueVisitor
-func (va ValueVisitorAdapter) VisitPreMapKeyValue(len int, idx int, k reflect.Value, v reflect.Value) {
-	va.preMapKeyValueVisitor(len, idx, k, v)
+func (va ValueVisitorAdapter) VisitPreMapKeyValue(length int, index int, k reflect.Value, v reflect.Value) {
+	va.preMapKeyValueVisitor(length, index, k, v)
 }
 
 // VisitPreMapKey delegates to composed PreMapKeyVisitor
-func (va ValueVisitorAdapter) VisitPreMapKey(len int, idx int, k reflect.Value) {
-	va.preMapKeyVisitor(len, idx, k)
+func (va ValueVisitorAdapter) VisitPreMapKey(length int, index int, k reflect.Value) {
+	va.preMapKeyVisitor(length, index, k)
 }
 
 // VisitPostMapKey delegates to composed PostMapKeyVisitor
-func (va ValueVisitorAdapter) VisitPostMapKey(len int, idx int, k reflect.Value) {
-	va.postMapKeyVisitor(len, idx, k)
+func (va ValueVisitorAdapter) VisitPostMapKey(length int, index int, k reflect.Value) {
+	va.postMapKeyVisitor(length, index, k)
 }
 
 // VisitPreMapValue delegates to composed PreMapValueVisitor
-func (va ValueVisitorAdapter) VisitPreMapValue(len int, idx int, v reflect.Value) {
-	va.preMapValueVisitor(len, idx, v)
+func (va ValueVisitorAdapter) VisitPreMapValue(length int, index int, v reflect.Value) {
+	va.preMapValueVisitor(length, index, v)
 }
 
 // VisitPostMapValue delegates to composed PostMapValueVisitor
-func (va ValueVisitorAdapter) VisitPostMapValue(len int, idx int, v reflect.Value) {
-	va.postMapValueVisitor(len, idx, v)
+func (va ValueVisitorAdapter) VisitPostMapValue(length int, index int, v reflect.Value) {
+	va.postMapValueVisitor(length, index, v)
 }
 
 // VisitPostMapKeyValue delegates to composed PostMapKeyValueVisitor
-func (va ValueVisitorAdapter) VisitPostMapKeyValue(len int, idx int, k reflect.Value, v reflect.Value) {
-	va.postMapKeyValueVisitor(len, idx, k, v)
+func (va ValueVisitorAdapter) VisitPostMapKeyValue(length int, index int, k reflect.Value, v reflect.Value) {
+	va.postMapKeyValueVisitor(length, index, k, v)
 }
 
 // VisitPostMap delegates to composed PostMapVisitor
-func (va ValueVisitorAdapter) VisitPostMap(len int, m reflect.Value) {
-	va.postMapVisitor(len, m)
+func (va ValueVisitorAdapter) VisitPostMap(length int, m reflect.Value) {
+	va.postMapVisitor(length, m)
 }
 
 // VisitPreStruct delegates to composed PreStructVisitor
-func (va ValueVisitorAdapter) VisitPreStruct(len int, v reflect.Value) {
-	va.preStructVisitor(len, v)
+func (va ValueVisitorAdapter) VisitPreStruct(length int, v reflect.Value) {
+	va.preStructVisitor(length, v)
 }
 
 // VisitPreStructFieldValue delegates to composed PreStructFieldValueVisitor
-func (va ValueVisitorAdapter) VisitPreStructFieldValue(len int, idx int, f reflect.StructField, v reflect.Value) {
-	va.preStructFieldValueVisitor(len, idx, f, v)
+func (va ValueVisitorAdapter) VisitPreStructFieldValue(length int, index int, f reflect.StructField, v reflect.Value) {
+	va.preStructFieldValueVisitor(length, index, f, v)
 }
 
 // VisitPostStructFieldValue delegates to composed PostStructFieldValueVisitor
-func (va ValueVisitorAdapter) VisitPostStructFieldValue(len int, idx int, f reflect.StructField, v reflect.Value) {
-	va.postStructFieldValueVisitor(len, idx, f, v)
+func (va ValueVisitorAdapter) VisitPostStructFieldValue(length int, index int, f reflect.StructField, v reflect.Value) {
+	va.postStructFieldValueVisitor(length, index, f, v)
 }
 
 // VisitPostStruct delegates to composed PostStructVisitor
-func (va ValueVisitorAdapter) VisitPostStruct(len int, v reflect.Value) {
-	va.postStructVisitor(len, v)
+func (va ValueVisitorAdapter) VisitPostStruct(length int, v reflect.Value) {
+	va.postStructVisitor(length, v)
 }
