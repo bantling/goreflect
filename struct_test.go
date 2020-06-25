@@ -1,7 +1,7 @@
 package goreflect
 
 import (
-	"fmt"
+	// "fmt"
 	"reflect"
 	"testing"
 
@@ -47,7 +47,11 @@ func TestFlatStruct(t *testing.T) {
 		actualIter func() (reflect.StructField, bool),
 	) {
 		// Fields are in order declared
-		assert.Equal(t, expected, actual)
+		assert.Equal(t, len(expected), len(actual))
+		for i, e := range expected {
+			// fmt.Printf("%d, %v, %v\n", i, e, actual[i])
+			assert.Equal(t, e, actual[i])
+		}
 
 		i := 0
 		for a, hasNext := actualIter(); hasNext; a, hasNext = actualIter() {
@@ -66,7 +70,9 @@ func TestFlatStruct(t *testing.T) {
 		for _, e := range expected {
 			var found bool
 			for _, a := range actual {
+				// fmt.Printf("%s, %s, %s, %s\n", e.Name, e.Type, a.Name, a.Type)
 				if found = (e.Name == a.Name) && (e.Type == a.Type); found {
+					// fmt.Println("equal")
 					break
 				}
 			}
@@ -75,8 +81,9 @@ func TestFlatStruct(t *testing.T) {
 			found = false
 			actualIter := actualIterGen()
 			for a, hasNext := actualIter(); hasNext; a, hasNext = actualIter() {
-				fmt.Printf("%s, %s, %s, %s\n", e.Name, e.Type, a.Name, a.Type)
+				// fmt.Printf("%s, %s, %s, %s\n", e.Name, e.Type, a.Name, a.Type)
 				if found = (e.Name == a.Name) && (e.Type == a.Type); found {
+					// fmt.Println("equal")
 					break
 				}
 			}
@@ -128,5 +135,88 @@ func TestFlatStruct(t *testing.T) {
 		},
 		gcf.ptrMethods,
 		gcf.PtrMethodsIter,
+	)
+
+	//// myCStruct
+
+	c := myCStruct{}
+	cf := FlatStructOf(c)
+
+	cvt := reflect.TypeOf(c)
+	assertFields(
+		[]reflect.StructField{
+			fldByName(cvt, "pf1"),
+			fldByName(cvt, "cf1"),
+			fldByName(cvt, "cf2"),
+			fldByName(cvt, "gc"),
+			fldByName(gcvt, "gcf1"),
+			fldByName(gcvt, "gcf2"),
+		},
+		cf.fields,
+		cf.FieldIter(),
+	)
+
+	assertMethods(
+		[]reflect.Method{
+			mthdByName(cvt, "Pm1"),
+			mthdByName(cvt, "Cm1"),
+			mthdByName(gcvt, "Gcm1"),
+		},
+		cf.valMethods,
+		cf.ValMethodsIter,
+	)
+
+	cpt := reflect.PtrTo(cvt)
+	assertMethods(
+		[]reflect.Method{
+			mthdByName(cpt, "Cm2"),
+			mthdByName(gcpt, "Gcm2"),
+		},
+		cf.ptrMethods,
+		cf.PtrMethodsIter,
+	)
+
+	//// myPStruct
+
+	p := myPStruct{}
+	pf := FlatStructOf(p)
+
+	pvt := reflect.TypeOf(p)
+	assertFields(
+		[]reflect.StructField{
+			fldByName(pvt, "pf1"),
+			fldByName(pvt, "pf2"),
+			fldByName(pvt, "myCStruct"),
+			fldByName(cvt, "cf1"),
+			fldByName(cvt, "cf2"),
+			fldByName(cvt, "gc"),
+			fldByName(gcvt, "gcf1"),
+			fldByName(gcvt, "gcf2"),
+		},
+		pf.fields,
+		pf.FieldIter(),
+	)
+
+	assertMethods(
+		[]reflect.Method{
+			mthdByName(pvt, "Pm1"),
+			// Embedded struct causes reflection to report its methods as declared in parent
+			mthdByName(pvt, "Cm1"),
+			mthdByName(gcvt, "Gcm1"),
+		},
+		pf.valMethods,
+		pf.ValMethodsIter,
+	)
+
+	ppt := reflect.PtrTo(pvt)
+	assertMethods(
+		[]reflect.Method{
+			mthdByName(ppt, "Pm2"),
+			// Embedded struct causes reflection to report its methods as declared in parent
+			mthdByName(ppt, "Cm2"),
+			mthdByName(gcpt, "Gcm2"),
+		},
+		pf.ptrMethods,
+		pf.PtrMethodsIter,
 	)
 }
