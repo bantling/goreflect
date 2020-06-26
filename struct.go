@@ -109,6 +109,13 @@ func FlatStructOf(val interface{}) FlatStruct {
 	}
 }
 
+// Fields returns a copy of all fields
+func (f FlatStruct) Fields() []reflect.StructField {
+	fieldsCopy := make([]reflect.StructField, len(f.fields))
+	copy(fieldsCopy, f.fields)
+	return fieldsCopy
+}
+
 // FieldIter returns an iterator function for the fields of the struct hierarchy that a FlatStruct describes.
 // For each field, the iterator returns (reflect.StructField instance, true).
 // After the last field has been iterated, all further calls return (reflect.StructField zero value, false).
@@ -127,6 +134,13 @@ func (f FlatStruct) FieldIter() func() (reflect.StructField, bool) {
 
 		return reflect.StructField{}, false
 	}
+}
+
+// ValMethods returns a copy of all value methods
+func (f FlatStruct) ValMethods() []reflect.Method {
+	valMethodsCopy := make([]reflect.Method, len(f.valMethods))
+	copy(valMethodsCopy, f.valMethods)
+	return valMethodsCopy
 }
 
 // ValMethodsIter returns an iterator function for the methods of the struct hierarchy that have a value receiver.
@@ -149,6 +163,13 @@ func (f FlatStruct) ValMethodsIter() func() (method reflect.Method, hasNext bool
 	}
 }
 
+// PtrMethods returns a copy of all pointer methods
+func (f FlatStruct) PtrMethods() []reflect.Method {
+	ptrMethodsCopy := make([]reflect.Method, len(f.ptrMethods))
+	copy(ptrMethodsCopy, f.ptrMethods)
+	return ptrMethodsCopy
+}
+
 // PtrMethodsIter returns an iterator function for the methods of the struct hierarchy that have a pointer receiver.
 // For each method, the iterator returns (reflect.Method instance, true).
 // After the last method has been iterated, all further calls return (reflect.Method{}, false).
@@ -167,6 +188,14 @@ func (f FlatStruct) PtrMethodsIter() func() (method reflect.Method, hasNext bool
 
 		return reflect.Method{}, false
 	}
+}
+
+// AllMethods returns a copy of all value methods followed by all pointer methods
+func (f FlatStruct) AllMethods() []reflect.Method {
+	allMethodsCopy := make([]reflect.Method, len(f.valMethods)+len(f.ptrMethods))
+	copy(allMethodsCopy, f.valMethods)
+	copy(allMethodsCopy[len(f.valMethods):], f.ptrMethods)
+	return allMethodsCopy
 }
 
 // AllMethodsIter returns an iterator function for all methods of the struct hierarchy.

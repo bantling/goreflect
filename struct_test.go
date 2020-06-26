@@ -43,15 +43,17 @@ func (*myPStruct) Pm2() {}
 func TestFlatStruct(t *testing.T) {
 	assertFields := func(
 		expected []reflect.StructField,
-		actual []reflect.StructField,
+		actual1 []reflect.StructField,
+		actual2 []reflect.StructField,
 		actualIter func() (reflect.StructField, bool),
 	) {
 		// Fields are in order declared
-		assert.Equal(t, len(expected), len(actual))
+		assert.Equal(t, len(expected), len(actual1))
 		for i, e := range expected {
-			// fmt.Printf("%d, %v, %v\n", i, e, actual[i])
-			assert.Equal(t, e, actual[i])
+			// fmt.Printf("%d, %v, %v\n", i, e, actual1[i])
+			assert.Equal(t, e, actual1[i])
 		}
+		assert.Equal(t, expected, actual2)
 
 		i := 0
 		for a, hasNext := actualIter(); hasNext; a, hasNext = actualIter() {
@@ -62,14 +64,38 @@ func TestFlatStruct(t *testing.T) {
 
 	assertMethods := func(
 		expected []reflect.Method,
-		actual []reflect.Method,
+		actual1 []reflect.Method,
+		actual2 []reflect.Method,
+		all []reflect.Method,
 		actualIterGen func() func() (reflect.Method, bool),
 	) {
 		// Methods are in random order
-		assert.Equal(t, len(expected), len(actual))
+		// all is all methods, it won't have the same length
+		assert.Equal(t, len(expected), len(actual1))
+		assert.Equal(t, len(expected), len(actual2))
 		for _, e := range expected {
 			var found bool
-			for _, a := range actual {
+			for _, a := range actual1 {
+				// fmt.Printf("%s, %s, %s, %s\n", e.Name, e.Type, a.Name, a.Type)
+				if found = (e.Name == a.Name) && (e.Type == a.Type); found {
+					// fmt.Println("equal")
+					break
+				}
+			}
+			assert.True(t, found)
+
+			found = false
+			for _, a := range actual2 {
+				// fmt.Printf("%s, %s, %s, %s\n", e.Name, e.Type, a.Name, a.Type)
+				if found = (e.Name == a.Name) && (e.Type == a.Type); found {
+					// fmt.Println("equal")
+					break
+				}
+			}
+			assert.True(t, found)
+
+			found = false
+			for _, a := range all {
 				// fmt.Printf("%s, %s, %s, %s\n", e.Name, e.Type, a.Name, a.Type)
 				if found = (e.Name == a.Name) && (e.Type == a.Type); found {
 					// fmt.Println("equal")
@@ -115,6 +141,7 @@ func TestFlatStruct(t *testing.T) {
 			fldByName(gcvt, "gcf2"),
 		},
 		gcf.fields,
+		gcf.Fields(),
 		gcf.FieldIter(),
 	)
 
@@ -125,6 +152,8 @@ func TestFlatStruct(t *testing.T) {
 			mthdByName(gcvt, "Gcm1"),
 		},
 		gcf.valMethods,
+		gcf.ValMethods(),
+		gcf.AllMethods(),
 		gcf.ValMethodsIter,
 	)
 
@@ -134,6 +163,8 @@ func TestFlatStruct(t *testing.T) {
 			mthdByName(gcpt, "Gcm2"),
 		},
 		gcf.ptrMethods,
+		gcf.PtrMethods(),
+		gcf.AllMethods(),
 		gcf.PtrMethodsIter,
 	)
 
@@ -153,6 +184,7 @@ func TestFlatStruct(t *testing.T) {
 			fldByName(gcvt, "gcf2"),
 		},
 		cf.fields,
+		cf.Fields(),
 		cf.FieldIter(),
 	)
 
@@ -163,6 +195,8 @@ func TestFlatStruct(t *testing.T) {
 			mthdByName(gcvt, "Gcm1"),
 		},
 		cf.valMethods,
+		cf.ValMethods(),
+		cf.AllMethods(),
 		cf.ValMethodsIter,
 	)
 
@@ -173,6 +207,8 @@ func TestFlatStruct(t *testing.T) {
 			mthdByName(gcpt, "Gcm2"),
 		},
 		cf.ptrMethods,
+		cf.PtrMethods(),
+		cf.AllMethods(),
 		cf.PtrMethodsIter,
 	)
 
@@ -194,6 +230,7 @@ func TestFlatStruct(t *testing.T) {
 			fldByName(gcvt, "gcf2"),
 		},
 		pf.fields,
+		pf.Fields(),
 		pf.FieldIter(),
 	)
 
@@ -205,6 +242,8 @@ func TestFlatStruct(t *testing.T) {
 			mthdByName(gcvt, "Gcm1"),
 		},
 		pf.valMethods,
+		pf.ValMethods(),
+		pf.AllMethods(),
 		pf.ValMethodsIter,
 	)
 
@@ -217,6 +256,8 @@ func TestFlatStruct(t *testing.T) {
 			mthdByName(gcpt, "Gcm2"),
 		},
 		pf.ptrMethods,
+		pf.PtrMethods(),
+		pf.AllMethods(),
 		pf.PtrMethodsIter,
 	)
 }
